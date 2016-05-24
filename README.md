@@ -14,6 +14,24 @@ Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contr
 wp dist-archive <path> [--format=<format>]
 ~~~
 
+For a plugin in a directory 'wp-content/plugins/hello-world', this command
+creates a distribution archive 'wp-content/plugins/hello-world.zip'.
+
+You can specify files or directories you'd like to exclude from the archive
+with a .distignore file in your project repository:
+
+```
+.distignore
+.editorconfig
+.git
+.gitignore
+.travis.yml
+circle.yml
+```
+
+Use one distibution archive command for many projects, instead of a bash
+script in each project.
+
 **OPTIONS**
 
 	<path>
