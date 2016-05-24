@@ -81,7 +81,8 @@ $dist_archive_command = function( $args, $assoc_args ) {
 		if ( 0 === $ret->return_code ) {
 			WP_CLI::success( "Created {$archive_file}" );
 		} else {
-			WP_CLI::error( $ret->stderr );
+			$error = $ret->stderr ? $ret->stderr : $ret->stdout;
+			WP_CLI::error( $error );
 		}
 	}
 
