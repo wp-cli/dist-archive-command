@@ -68,8 +68,17 @@ $dist_archive_command = function( $args, $assoc_args ) {
 		$ignored_files[] = $archive_base . '/' . $file;
 	}
 
+	$version = '';
+	foreach( glob( $path . '/*.php' ) as $php_file ) {
+		$contents = file_get_contents( $php_file, false, null, 0, 5000 );
+		if ( preg_match( '#\* Version:(.+)#', $contents, $matches ) ) {
+			$version = '.' . trim( $matches[1] );
+			break;
+		}
+	}
+
 	if ( 'zip' === $assoc_args['format'] ) {
-		$archive_file = $archive_base . '.zip';
+		$archive_file = $archive_base . $version . '.zip';
 		$excludes = implode( ' --exclude ', $ignored_files );
 		if ( ! empty( $excludes ) ) {
 			$excludes = ' --exclude ' . $excludes;
