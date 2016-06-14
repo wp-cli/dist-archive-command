@@ -85,7 +85,7 @@ $dist_archive_command = function( $args, $assoc_args ) {
 		}
 		chdir( dirname( $path ) );
 		WP_CLI::debug( getcwd() );
-		$cmd = "zip -r {$archive_file} {$archive_base} {$excludes}";
+		$cmd = "zip -r {$excludes} {$archive_file} {$archive_base}";
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
 		$ret = WP_CLI::launch( escapeshellcmd( $cmd ), false, true );
 		if ( 0 === $ret->return_code ) {
