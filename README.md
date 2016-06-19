@@ -1,7 +1,7 @@
 runcommand/dist-archive
 =======================
 
-Create a distribution archive based on a project's .distignore
+Create a distribution .zip or .tar.gz based on a plugin or theme's .distignore file.
 
 [![Build Status](https://travis-ci.org/runcommand/dist-archive.svg?branch=master)](https://travis-ci.org/runcommand/dist-archive)
 
