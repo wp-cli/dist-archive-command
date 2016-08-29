@@ -9,7 +9,8 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/.travis.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
-    When I run `wp dist-archive wp-content/plugins/hello-world`
+    When I run `wp dist-archive wp-content/plugins/hello-world --debug`
+    Then STDERR should be empty
     And the wp-content/plugins/hello-world.0.1.0.zip file should exist
 
     When I run `wp plugin delete hello-world`
