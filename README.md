@@ -10,7 +10,7 @@ Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contr
 ## Using
 
 ~~~
-wp dist-archive <path> [--format=<format>]
+wp dist-archive <path> [<target>] [--format=<format>]
 ~~~
 
 For a plugin in a directory 'wp-content/plugins/hello-world', this command
@@ -35,6 +35,9 @@ script in each project.
 
 	<path>
 		Path to the project that includes a .distignore file.
+
+	[<target>]
+		Path and file name for the distribution archive. Defaults to project directory name plus version, if discoverable.
 
 	[--format=<format>]
 		Choose the format for the archive.

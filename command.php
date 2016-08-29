@@ -30,6 +30,9 @@ if ( ! class_exists( 'WP_CLI' ) ) {
  * <path>
  * : Path to the project that includes a .distignore file.
  *
+ * [<target>]
+ * : Path and file name for the distribution archive. Defaults to project directory name plus version, if discoverable.
+ *
  * [--format=<format>]
  * : Choose the format for the archive.
  * ---
@@ -44,6 +47,15 @@ if ( ! class_exists( 'WP_CLI' ) ) {
 $dist_archive_command = function( $args, $assoc_args ) {
 
 	list( $path ) = $args;
+	if ( isset( $args[1] ) ) {
+		$archive_file = $args[1];
+		$info = pathinfo( $archive_file );
+		if ( '.' === $info['dirname'] ) {
+			$archive_file  = getcwd() . '/' . $info['basename'];
+		}
+	} else {
+		$archive_file = null;
+	}
 	$path = rtrim( realpath( $path ), '/' );
 	if ( ! is_dir( $path ) ) {
 		WP_CLI::error( 'Provided path is not a directory.' );
@@ -78,7 +90,9 @@ $dist_archive_command = function( $args, $assoc_args ) {
 	}
 
 	if ( 'zip' === $assoc_args['format'] ) {
-		$archive_file = $archive_base . $version . '.zip';
+		if ( is_null( $archive_file ) ) {
+			$archive_file = dirname( $path ) . '/' . $archive_base . $version . '.zip';
+		}
 		$excludes = implode( ' --exclude ', $ignored_files );
 		if ( ! empty( $excludes ) ) {
 			$excludes = ' --exclude ' . $excludes;
@@ -88,7 +102,8 @@ $dist_archive_command = function( $args, $assoc_args ) {
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
 		$ret = WP_CLI::launch( escapeshellcmd( $cmd ), false, true );
 		if ( 0 === $ret->return_code ) {
-			WP_CLI::success( "Created {$archive_file}" );
+			$filename = pathinfo( $archive_file, PATHINFO_BASENAME );
+			WP_CLI::success( "Created {$filename}" );
 		} else {
 			$error = $ret->stderr ? $ret->stderr : $ret->stdout;
 			WP_CLI::error( $error );
