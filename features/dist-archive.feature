@@ -37,3 +37,27 @@ Feature: Generate a distribution archive of a project
       """
     And the hello-world.zip file should exist
     And the wp-content/plugins/hello-world.0.1.0.zip file should not exist
+
+  Scenario: Generate a ZIP archive using version number in composer.json
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      .gitignore
+      .distignore
+      """
+    And a foo/composer.json file:
+      """
+      {
+          "name": "runcommand/profile",
+          "description": "Quickly identify what's slow with WordPress.",
+          "homepage": "https://runcommand.io/wp/profile/",
+          "version": "0.2.0-alpha"
+      }
+      """
+
+    When I run `wp dist-archive foo`
+    Then STDOUT should be:
+      """
+      Success: Created foo.0.2.0-alpha.zip
+      """
+    And the foo.0.2.0-alpha.zip file should exist
