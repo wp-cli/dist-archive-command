@@ -44,6 +44,11 @@ Feature: Generate a distribution archive of a project
       """
       .gitignore
       .distignore
+      features/
+      """
+    And a foo/features/sample.feature file:
+      """
+      Testing
       """
     And a foo/composer.json file:
       """
@@ -61,3 +66,12 @@ Feature: Generate a distribution archive of a project
       Success: Created foo.0.2.0-alpha.zip
       """
     And the foo.0.2.0-alpha.zip file should exist
+
+    When I run `rm -rf foo`
+    Then the foo directory should not exist
+
+    When I run `unzip foo.0.2.0-alpha.zip`
+    Then the foo directory should exist
+    And the foo/composer.json file should exist
+    And the foo/.distignore file should not exist
+    And the foo/features/sample.feature file should not exist
