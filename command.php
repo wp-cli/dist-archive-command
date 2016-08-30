@@ -89,6 +89,13 @@ $dist_archive_command = function( $args, $assoc_args ) {
 		}
 	}
 
+	if ( empty( $version ) && file_exists( $path . '/composer.json' ) ) {
+		$composer_obj = json_decode( file_get_contents( $path . '/composer.json' ) );
+		if ( ! empty( $composer_obj->version ) ) {
+			$version = '.' . trim( $composer_obj->version );
+		}
+	}
+
 	if ( 'zip' === $assoc_args['format'] ) {
 		if ( is_null( $archive_file ) ) {
 			$archive_file = dirname( $path ) . '/' . $archive_base . $version . '.zip';
