@@ -75,7 +75,7 @@ $dist_archive_command = function( $args, $assoc_args ) {
 			continue;
 		}
 		if ( is_dir( $path . '/' . $file ) ) {
-			$file .= '/*';
+			$file = rtrim( $file, '/' ) . '/*';
 		}
 		$ignored_files[] = $archive_base . '/' . $file;
 	}
