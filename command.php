@@ -96,25 +96,42 @@ $dist_archive_command = function( $args, $assoc_args ) {
 		}
 	}
 
-	if ( 'zip' === $assoc_args['format'] ) {
-		if ( is_null( $archive_file ) ) {
-			$archive_file = dirname( $path ) . '/' . $archive_base . $version . '.zip';
+	if ( is_null( $archive_file ) ) {
+		$archive_file = dirname( $path ) . '/' . $archive_base . $version;
+		if ( 'zip' === $assoc_args['format'] ) {
+			$archive_file .= '.zip';
+		} else if ( 'targz' === $assoc_args['format'] ) {
+			$archive_file .= '.tar.gz';
 		}
+	}
+
+	chdir( dirname( $path ) );
+
+	if ( 'zip' === $assoc_args['format'] ) {
 		$excludes = implode( ' --exclude ', $ignored_files );
 		if ( ! empty( $excludes ) ) {
 			$excludes = ' --exclude ' . $excludes;
 		}
-		chdir( dirname( $path ) );
 		$cmd = "zip -r {$archive_file} {$archive_base} {$excludes}";
-		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
-		$ret = WP_CLI::launch( escapeshellcmd( $cmd ), false, true );
-		if ( 0 === $ret->return_code ) {
-			$filename = pathinfo( $archive_file, PATHINFO_BASENAME );
-			WP_CLI::success( "Created {$filename}" );
-		} else {
-			$error = $ret->stderr ? $ret->stderr : $ret->stdout;
-			WP_CLI::error( $error );
-		}
+	} else if ( 'targz' === $assoc_args['format'] ) {
+		$excludes = array_map( function( $ignored_file ){
+			if ( '/*' === substr( $ignored_file, -2 ) ) {
+				$ignored_file = substr( $ignored_file, 0, ( strlen( $ignored_file ) - 2 ) );
+			}
+			return "--exclude='{$ignored_file}'";
+		}, $ignored_files );
+		$excludes = implode( ' ', $excludes );
+		$cmd = "tar {$excludes} -zcvf {$archive_file} {$archive_base}";
+	}
+
+	WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
+	$ret = WP_CLI::launch( escapeshellcmd( $cmd ), false, true );
+	if ( 0 === $ret->return_code ) {
+		$filename = pathinfo( $archive_file, PATHINFO_BASENAME );
+		WP_CLI::success( "Created {$filename}" );
+	} else {
+		$error = $ret->stderr ? $ret->stderr : $ret->stdout;
+		WP_CLI::error( $error );
 	}
 
 };
