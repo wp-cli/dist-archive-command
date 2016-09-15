@@ -23,8 +23,13 @@
             "dist-archive"
         ],
         "readme": {
-            "contributing": {
-                "body": "https://raw.githubusercontent.com/runcommand/runcommand-theme/master/bin/readme-partials/contributing-open-source.md"
+            "sections": [
+                "Using",
+                "Installing",
+                "Support"
+            ],
+            "support": {
+                "body": "https://raw.githubusercontent.com/runcommand/runcommand-theme/master/bin/readme-partials/support-open-source.md"
             }
         }
     }
