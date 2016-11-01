@@ -19,11 +19,15 @@
     "require-dev": {
         "behat/behat": "~2.5"
     },
-    "extras": {
+    "extra": {
         "commands": [
             "dist-archive"
         ],
         "readme": {
+            "shields": [
+                "[![runcommand open source](https://runcommand.io/wp-content/themes/runcommand-theme/bin/shields/runcommand-open-source.svg)](https://runcommand.io/pricing/)",
+                "[![CircleCI](https://circleci.com/gh/runcommand/dist-archive/tree/master.svg?style=svg)](https://circleci.com/gh/runcommand/dist-archive/tree/master)"
+            ],
             "sections": [
                 "Using",
                 "Installing",
