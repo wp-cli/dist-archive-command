@@ -96,6 +96,14 @@ $dist_archive_command = function( $args, $assoc_args ) {
 		}
 	}
 
+	if ( false !== stripos( $version, '-alpha' ) && is_dir( $path . '/.git' ) ) {
+		$response = WP_CLI::launch( "cd {$path}; git log --pretty=format:'%h' -n 1", false, true );
+		$maybe_hash = trim( $response->stdout );
+		if ( $maybe_hash && 7 === strlen( $maybe_hash ) ) {
+			$version .= '-' . $maybe_hash;
+		}
+	}
+
 	if ( is_null( $archive_file ) ) {
 		$archive_file = dirname( $path ) . '/' . $archive_base . $version;
 		if ( 'zip' === $assoc_args['format'] ) {
