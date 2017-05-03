@@ -1,2 +1,2 @@
 require:
-  - command.php
+  - dist-archive-command.php

@@ -2,14 +2,28 @@ machine:
   php:
     version: 5.6.22
   environment:
-    WP_CLI_BIN_DIR: /tmp/wp-cli-phar
+    PATH: "$HOME/$CIRCLE_PROJECT_REPONAME/vendor/bin:$PATH"
+    WP_CLI_BIN_DIR: "$HOME/$CIRCLE_PROJECT_REPONAME/vendor/bin"
 
 dependencies:
   cache_directories:
     - ~/.composer/cache
+  pre:
+    # Set the PHP timezone so that Behat does not fail.
+    - echo "date.timezone = 'US/Central'" > /opt/circleci/php/$(phpenv global)/etc/conf.d/wp-cli-timezone.ini
+    # Disable xdebug, which makes Composer slower.
+    - echo ""  > /opt/circleci/php/$(phpenv global)/etc/conf.d/xdebug.ini
+    # Increase memory limit
+    - echo "memory_limit = 512M" > /opt/circleci/php/$(phpenv global)/etc/conf.d/memory.ini
+  override:
+    - composer require wp-cli/wp-cli:dev-master
+    - composer install
+    - bash bin/install-package-tests.sh
 
 test:
   pre:
-    - bash bin/install-package-tests.sh
+    - composer validate
   override:
-    - ./vendor/bin/behat --strict
+    - WP_VERSION=latest bash bin/test.sh
+    - rm -rf '/tmp/wp-cli-test core-download-cache'
+    - WP_VERSION=trunk bash bin/test.sh

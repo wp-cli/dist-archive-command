@@ -1,11 +1,11 @@
-runcommand/dist-archive
-=======================
+wp-cli/dist-archive-command
+===========================
 
 Create a distribution .zip or .tar.gz based on a plugin or theme's .distignore file.
 
-[![runcommand open source](https://runcommand.io/wp-content/themes/runcommand-theme/bin/shields/runcommand-open-source.svg)](https://runcommand.io/pricing/) [![CircleCI](https://circleci.com/gh/runcommand/dist-archive/tree/master.svg?style=svg)](https://circleci.com/gh/runcommand/dist-archive/tree/master)
+[![Build Status](https://travis-ci.org/wp-cli/dist-archive-command.svg?branch=master)](https://travis-ci.org/wp-cli/dist-archive-command)
 
-Quick links: [Using](#using) | [Installing](#installing) | [Support](#support)
+Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contributing)
 
 ## Using
 
@@ -52,16 +52,38 @@ script in each project.
 
 Installing this package requires WP-CLI v0.23.0 or greater. Update to the latest stable release with `wp cli update`.
 
-Once you've done so, you can install this package with `wp package install runcommand/dist-archive`.
+Once you've done so, you can install this package with `wp package install wp-cli/dist-archive-command`.
 
-## Support
+## Contributing
 
-This WP-CLI package is free for anyone to use. Support, including usage questions and feature requests, is available to [paying runcommand customers](https://runcommand.io/pricing/).
+We appreciate you taking the initiative to contribute to this project.
 
-Think you’ve found a bug? Before you create a new issue, you should [search existing issues](https://github.com/runcommand/sparks/issues?q=label%3Abug%20) to see if there’s an existing resolution to it, or if it’s already been fixed in a newer version. Once you’ve done a bit of searching and discovered there isn’t an open or fixed issue for your bug, please [create a new issue](https://github.com/runcommand/sparks/issues/new) with description of what you were doing, what you saw, and what you expected to see.
+Contributing isn’t limited to just code. We encourage you to contribute in the way that best fits your abilities, by writing tutorials, giving a demo at your local meetup, helping other users with their support questions, or revising our documentation.
 
-Want to contribute a new feature? Please first [open a new issue](https://github.com/runcommand/sparks/issues/new) to discuss whether the feature is a good fit for the project. Once you've decided to work on a pull request, please include [functional tests](https://wp-cli.org/docs/pull-requests/#functional-tests) and follow the [WordPress Coding Standards](http://make.wordpress.org/core/handbook/coding-standards/).
+### Reporting a bug
 
-runcommand customers can also email [support@runcommand.io](mailto:support@runcommand.io) for private support.
+Think you’ve found a bug? We’d love for you to help us get it fixed.
+
+Before you create a new issue, you should [search existing issues](https://github.com/wp-cli/dist-archive-command/issues?q=label%3Abug%20) to see if there’s an existing resolution to it, or if it’s already been fixed in a newer version.
+
+Once you’ve done a bit of searching and discovered there isn’t an open or fixed issue for your bug, please [create a new issue](https://github.com/wp-cli/dist-archive-command/issues/new) with the following:
+
+1. What you were doing (e.g. "When I run `wp post list`").
+2. What you saw (e.g. "I see a fatal about a class being undefined.").
+3. What you expected to see (e.g. "I expected to see the list of posts.")
+
+Include as much detail as you can, and clear steps to reproduce if possible.
+
+### Creating a pull request
+
+Want to contribute a new feature? Please first [open a new issue](https://github.com/wp-cli/dist-archive-command/issues/new) to discuss whether the feature is a good fit for the project.
+
+Once you've decided to commit the time to seeing your pull request through, please follow our guidelines for creating a pull request to make sure it's a pleasant experience:
+
+1. Create a feature branch for each contribution.
+2. Submit your pull request early for feedback.
+3. Include functional tests with your changes. [Read the WP-CLI documentation](https://wp-cli.org/docs/pull-requests/#functional-tests) for an introduction.
+4. Follow the [WordPress Coding Standards](http://make.wordpress.org/core/handbook/coding-standards/).
 
 
+*This README.md is generated dynamically from the project's codebase using `wp scaffold package-readme` ([doc](https://github.com/wp-cli/scaffold-package-command#wp-scaffold-package-readme)). To suggest changes, please submit a pull request against the corresponding part of the codebase.*
