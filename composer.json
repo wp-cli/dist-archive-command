@@ -13,6 +13,9 @@
     ],
     "minimum-stability": "dev",
     "autoload": {
+        "psr-4": {
+            "": "src/"
+        },
         "files": [ "dist-archive-command.php" ]
     },
     "require": {},
