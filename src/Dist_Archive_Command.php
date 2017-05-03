@@ -77,7 +77,11 @@ class Dist_Archive_Command {
 			if ( is_dir( $path . '/' . $file ) ) {
 				$file = rtrim( $file, '/' ) . '/*';
 			}
-			$ignored_files[] = $archive_base . '/' . $file;
+			if ( 'zip' === $assoc_args['format'] ) {
+				$ignored_files[] = '*/' . $file;
+			} elseif ( 'targz' === $assoc_args['format'] ) {
+				$ignored_files[] = $file;
+			}
 		}
 
 		$version = '';
