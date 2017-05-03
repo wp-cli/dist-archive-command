@@ -106,3 +106,45 @@ Feature: Generate a distribution archive of a project
     And the foo/composer.json file should exist
     And the foo/.distignore file should not exist
     And the foo/features/sample.feature file should not exist
+
+  Scenario Outline: Ignores hidden files in subdirectories
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      .DS_Store
+      """
+    And a foo/test.php file:
+      """
+      <?php
+      echo 'Hello world;';
+      """
+    And a foo/test-dir/test.php file:
+      """
+      <?php
+      echo 'Hello world;';
+      """
+    And a foo/test-dir/.DS_Store file:
+      """
+      Bad!
+      """
+
+    When I run `wp dist-archive foo --format=<format>`
+    Then STDOUT should be:
+      """
+      Success: Created foo.<extension>
+      """
+    And the foo.<extension> file should exist
+
+    When I run `rm -rf foo`
+    Then the foo directory should not exist
+
+    When I run `<extract> foo.<extension>`
+    Then the foo directory should exist
+    And the foo/test.php file should exist
+    And the foo/test-dir/test.php file should exist
+    And the foo/test-dir/.DS_Store file should not exist
+
+    Examples:
+      | format  | extension | extract   |
+      | zip     | zip       | unzip     |
+      | targz   | tar.gz    | tar -zxvf |
