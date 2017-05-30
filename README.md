@@ -3,7 +3,7 @@ wp-cli/dist-archive-command
 
 Create a distribution .zip or .tar.gz based on a plugin or theme's .distignore file.
 
-[![Build Status](https://travis-ci.org/wp-cli/dist-archive-command.svg?branch=master)](https://travis-ci.org/wp-cli/dist-archive-command)
+[![CircleCI](https://circleci.com/gh/wp-cli/dist-archive-command/tree/master.svg?style=svg)](https://circleci.com/gh/wp-cli/dist-archive-command/tree/master)
 
 Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contributing)
 
@@ -52,7 +52,9 @@ script in each project.
 
 Installing this package requires WP-CLI v0.23.0 or greater. Update to the latest stable release with `wp cli update`.
 
-Once you've done so, you can install this package with `wp package install wp-cli/dist-archive-command`.
+Once you've done so, you can install this package with:
+
+    wp package install git@github.com:wp-cli/dist-archive-command.git
 
 ## Contributing
 
