@@ -49,9 +49,9 @@ class Dist_Archive_Command {
 		list( $path ) = $args;
 		if ( isset( $args[1] ) ) {
 			$archive_file = $args[1];
-			$info = pathinfo( $archive_file );
+			$info         = pathinfo( $archive_file );
 			if ( '.' === $info['dirname'] ) {
-				$archive_file  = getcwd() . '/' . $info['basename'];
+				$archive_file = getcwd() . '/' . $info['basename'];
 			}
 		} else {
 			$archive_file = null;
@@ -67,9 +67,9 @@ class Dist_Archive_Command {
 		}
 
 		$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
-		$ignored_files = array();
-		$archive_base = basename( $path );
-		foreach( $maybe_ignored_files as $file ) {
+		$ignored_files       = array();
+		$archive_base        = basename( $path );
+		foreach ( $maybe_ignored_files as $file ) {
 			$file = trim( $file );
 			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
 				continue;
@@ -85,7 +85,7 @@ class Dist_Archive_Command {
 		}
 
 		$version = '';
-		foreach( glob( $path . '/*.php' ) as $php_file ) {
+		foreach ( glob( $path . '/*.php' ) as $php_file ) {
 			$contents = file_get_contents( $php_file, false, null, 0, 5000 );
 			if ( preg_match( '#\* Version:(.+)#', $contents, $matches ) ) {
 				$version = '.' . trim( $matches[1] );
@@ -101,7 +101,7 @@ class Dist_Archive_Command {
 		}
 
 		if ( false !== stripos( $version, '-alpha' ) && is_dir( $path . '/.git' ) ) {
-			$response = WP_CLI::launch( "cd {$path}; git log --pretty=format:'%h' -n 1", false, true );
+			$response   = WP_CLI::launch( "cd {$path}; git log --pretty=format:'%h' -n 1", false, true );
 			$maybe_hash = trim( $response->stdout );
 			if ( $maybe_hash && 7 === strlen( $maybe_hash ) ) {
 				$version .= '-' . $maybe_hash;
@@ -112,7 +112,7 @@ class Dist_Archive_Command {
 			$archive_file = dirname( $path ) . '/' . $archive_base . $version;
 			if ( 'zip' === $assoc_args['format'] ) {
 				$archive_file .= '.zip';
-			} else if ( 'targz' === $assoc_args['format'] ) {
+			} elseif ( 'targz' === $assoc_args['format'] ) {
 				$archive_file .= '.tar.gz';
 			}
 		}
@@ -125,15 +125,17 @@ class Dist_Archive_Command {
 				$excludes = ' --exclude ' . $excludes;
 			}
 			$cmd = "zip -r {$archive_file} {$archive_base} {$excludes}";
-		} else if ( 'targz' === $assoc_args['format'] ) {
-			$excludes = array_map( function( $ignored_file ){
-				if ( '/*' === substr( $ignored_file, -2 ) ) {
-					$ignored_file = substr( $ignored_file, 0, ( strlen( $ignored_file ) - 2 ) );
-				}
-				return "--exclude='{$ignored_file}'";
-			}, $ignored_files );
+		} elseif ( 'targz' === $assoc_args['format'] ) {
+			$excludes = array_map(
+				function( $ignored_file ) {
+					if ( '/*' === substr( $ignored_file, -2 ) ) {
+						$ignored_file = substr( $ignored_file, 0, ( strlen( $ignored_file ) - 2 ) );
+					}
+						return "--exclude='{$ignored_file}'";
+				}, $ignored_files
+			);
 			$excludes = implode( ' ', $excludes );
-			$cmd = "tar {$excludes} -zcvf {$archive_file} {$archive_base}";
+			$cmd      = "tar {$excludes} -zcvf {$archive_file} {$archive_base}";
 		}
 
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
