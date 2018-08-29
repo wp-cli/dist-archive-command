@@ -4,15 +4,19 @@ jobs:
     working_directory: ~/wp-cli/package-tests
     parallelism: 1
     docker:
-    - image: circleci/php:7.1
-    - image: circleci/mysql:5.6
+    - image: circleci/php:7.1-cli
+      environment:
+          MYSQL_DB: wp_cli_test_scaffold
+          MYSQL_USER: wp_cli_test
+          MYSQL_PASSWORD: password1
+    - image: circleci/mysql:5.7
     steps:
     - checkout
     - run: |
         sudo sh -c "printf '\ndeb http://ftp.us.debian.org/debian sid main\n' >> /etc/apt/sources.list"
         sudo apt-get update
         sudo docker-php-ext-install mysqli
-        sudo apt-get install mysql-client-5.7
+        sudo apt-get install -y mysql-client-5.7
     - run: |
         echo -e "memory_limit = 1024M" | sudo tee /usr/local/etc/php/php.ini > /dev/null
     - run: |
@@ -24,6 +28,6 @@ jobs:
         source $BASH_ENV
     - run: |
         composer validate
-        WP_VERSION=latest bash bin/test.sh
+        WP_VERSION=latest composer behat
         rm -rf '/tmp/wp-cli-test core-download-cache'
-        WP_VERSION=trunk bash bin/test.sh
+        WP_VERSION=trunk composer behat
