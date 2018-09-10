@@ -6,15 +6,12 @@ jobs:
     docker:
     - image: circleci/php:7.1-cli
       environment:
-          MYSQL_DB: wp_cli_test_scaffold
-          MYSQL_USER: wp_cli_test
-          MYSQL_PASSWORD: password1
           MYSQL_HOST: 127.0.0.1
     - image: circleci/mysql:5.7
       environment:
           MYSQL_USER: wp_cli_test
           MYSQL_PASSWORD: password1
-          MYSQL_HOST: 127.0.0.1
+          MYSQL_DATABASE: wp_cli_test
     steps:
     - checkout
     - run: |
