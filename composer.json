@@ -1,7 +1,7 @@
 {
     "name": "wp-cli/dist-archive-command",
-    "description": "Create a distribution .zip or .tar.gz based on a plugin or theme's .distignore file.",
     "type": "wp-cli-package",
+    "description": "Create a distribution .zip or .tar.gz based on a plugin or theme's .distignore file.",
     "homepage": "https://runcommand.io/wp/dist-archive/",
     "license": "MIT",
     "authors": [
@@ -11,20 +11,41 @@
             "homepage": "https://runcommand.io"
         }
     ],
-    "minimum-stability": "dev",
-    "autoload": {
-        "psr-4": {
-            "": "src/"
-        },
-        "files": [ "dist-archive-command.php" ]
+    "require": {
+        "php": ">=5.4",
+        "wp-cli/wp-cli": "^2"
     },
-    "require": {},
     "require-dev": {
-        "behat/behat": "~2.5"
+        "behat/behat": "~2.5",
+        "wp-cli/wp-cli-tests": "^2",
+        "wp-cli/scaffold-command": "^2",
+        "wp-cli/extension-command": "^2"
     },
     "extra": {
         "commands": [
             "dist-archive"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "": "src/"
+        },
+        "files": [
+            "dist-archive-command.php"
+        ]
+    },
+    "minimum-stability": "dev",
+    "scripts": {
+        "behat": "run-behat-tests",
+        "lint": "run-linter-tests",
+        "phpcs": "run-phpcs-tests",
+        "phpunit": "run-php-unit-tests",
+        "prepare-tests": "install-package-tests",
+        "test": [
+            "@lint",
+            "@phpcs",
+            "@phpunit",
+            "@behat"
         ]
     }
 }
