@@ -1,5 +1,7 @@
 <?php
 
+use WP_CLI\Utils;
+
 /**
  * Create a distribution archive based on a project's .distignore file.
  */
@@ -33,6 +35,9 @@ class Dist_Archive_Command {
 	 *
 	 * [<target>]
 	 * : Path and file name for the distribution archive. Defaults to project directory name plus version, if discoverable.
+	 *
+	 * [--create-target-dir]
+	 * : Automatically create the target directory as needed.
 	 *
 	 * [--format=<format>]
 	 * : Choose the format for the archive.
@@ -119,6 +124,14 @@ class Dist_Archive_Command {
 
 		chdir( dirname( $path ) );
 
+		if ( Utils\get_flag_value( $assoc_args, 'create-target-dir' ) ) {
+			$this->maybe_create_directory( $archive_file );
+		}
+
+		if ( ! is_dir( dirname( $archive_file ) ) ) {
+			WP_CLI::error( "Target directory does not exist: {$archive_file}" );
+		}
+
 		if ( 'zip' === $assoc_args['format'] ) {
 			$excludes = implode( ' --exclude ', $ignored_files );
 			if ( ! empty( $excludes ) ) {
@@ -149,4 +162,16 @@ class Dist_Archive_Command {
 		}
 	}
 
+	/**
+	 * Create the directory for a target file if it does not exist yet.
+	 *
+	 * @param string $archive_file Path and filename of the target file.
+	 * @return void
+	 */
+	private function maybe_create_directory( $archive_file ) {
+		$directory = dirname( $archive_file );
+		if ( ! is_dir( $directory ) ) {
+			mkdir( $directory, $mode = 0777, $recursive = true );
+		}
+	}
 }
