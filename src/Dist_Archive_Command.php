@@ -128,6 +128,10 @@ class Dist_Archive_Command {
 			$this->maybe_create_directory( $archive_file );
 		}
 
+		if ( ! is_dir( dirname( $archive_file ) ) ) {
+			WP_CLI::error( "Target directory does not exist: {$archive_file}" );
+		}
+
 		if ( 'zip' === $assoc_args['format'] ) {
 			$excludes = implode( ' --exclude ', $ignored_files );
 			if ( ! empty( $excludes ) ) {
