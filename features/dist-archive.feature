@@ -183,6 +183,17 @@ Feature: Generate a distribution archive of a project
       """
 	And the wp-content/plugins/hello-world.0.1.0.zip file should exist
 
+  Scenario: Generates a ZIP archive of the current directory with custom archive name
+	Given a WP install
+
+	When I run `wp scaffold plugin hello-world`
+	And I run `cd wp-content/plugins/hello-world && wp dist-archive . foo.zip`
+	Then STDOUT should be:
+      """
+      Success: Created foo.zip
+      """
+	And the wp-content/plugins/hello-world/foo.zip file should exist
+
   Scenario: Generates a ZIP archive of the current directory with slash
 	Given a WP install
 
@@ -193,3 +204,14 @@ Feature: Generate a distribution archive of a project
       Success: Created hello-world.0.1.0.zip
       """
 	And the wp-content/plugins/hello-world.0.1.0.zip file should exist
+
+  Scenario: Generates a ZIP archive of the current directory with slash and custom archive name
+	Given a WP install
+
+	When I run `wp scaffold plugin hello-world`
+	And I run `cd wp-content/plugins/hello-world && wp dist-archive ./ foo.zip`
+	Then STDOUT should be:
+      """
+      Success: Created foo.zip
+      """
+	And the wp-content/plugins/hello-world/foo.zip file should exist
