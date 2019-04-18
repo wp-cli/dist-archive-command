@@ -264,8 +264,8 @@ class Dist_Archive_Command {
 	 * @param string $docblock
 	 * @return array
 	*/
-    private static function parse_doc_block($docblock): array
-    {
+	private static function parse_doc_block($docblock): array
+	{
 		$tag_documentor = '{@([a-zA-Z0-9-_\\\]+)\s*?(.*)?}';
 		$tag_property = '{\s*\*?\s*(.*?)\:(.*)}';
 		$lines = explode(PHP_EOL, $docblock);
