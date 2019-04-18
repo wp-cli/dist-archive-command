@@ -173,25 +173,54 @@ Feature: Generate a distribution archive of a project
     And the {RUN_DIR}/some/nested/folder/hello-world.zip file should exist
 
   Scenario: Generates an archive with another name using the plugin-dirname flag
-	Given a WP install
+    Given a WP install
 
-	When I run `wp scaffold plugin hello-world`
-	Then the wp-content/plugins/hello-world directory should exist
-	And the wp-content/plugins/hello-world/hello-world.php file should exist
-	And the wp-content/plugins/hello-world/.travis.yml file should exist
-	And the wp-content/plugins/hello-world/bin directory should exist
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
 
-	When I run `wp dist-archive wp-content/plugins/hello-world --plugin-dirname=foobar-world`
-	Then STDOUT should be:
+    When I run `wp dist-archive wp-content/plugins/hello-world --plugin-dirname=foobar-world`
+    Then STDOUT should be:
+        """
+        Success: Created foobar-world.0.1.0.zip
+        """
+    And STDERR should be empty
+    And the wp-content/plugins/foobar-world.0.1.0.zip file should exist
+
+    When I run `wp plugin delete hello-world`
+    Then the wp-content/plugins/hello-world directory should not exist
+
+    When I run `wp plugin install wp-content/plugins/foobar-world.0.1.0.zip`
+    Then the wp-content/plugins/foobar-world directory should exist
+    And the wp-content/plugins/foobar-world/hello-world.php file should exist
+
+  Scenario: Finds the version tag even if ill-formed
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `sed -i wp-content/plugins/hello-world/hello-world.php -e "s/* Version:/Version/" -e "s/0.1.0/0.2.0/"`
+    Then STDERR should be empty
+
+    When I run `wp dist-archive wp-content/plugins/hello-world`
+    Then STDOUT should be:
       """
-      Success: Created foobar-world.0.1.0.zip
+      Success: Created hello-world.0.2.0.zip
       """
-	And STDERR should be empty
-	And the wp-content/plugins/foobar-world.0.1.0.zip file should exist
+    And STDERR should be empty
+    And the wp-content/plugins/hello-world.0.1.0.zip file should exist
 
-	When I run `wp plugin delete hello-world`
-	Then the wp-content/plugins/hello-world directory should not exist
+    When I run `wp plugin delete hello-world`
+    Then the wp-content/plugins/hello-world directory should not exist
 
-	When I run `wp plugin install wp-content/plugins/foobar-world.0.1.0.zip`
-	Then the wp-content/plugins/foobar-world directory should exist
-	And the wp-content/plugins/foobar-world/hello-world.php file should exist
+    When I run `wp plugin install wp-content/plugins/hello-world.0.1.0.zip`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should not exist
+    And the wp-content/plugins/hello-world/bin directory should not exist
