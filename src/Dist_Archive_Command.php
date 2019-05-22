@@ -145,7 +145,8 @@ class Dist_Archive_Command {
 						$ignored_file = substr( $ignored_file, 0, ( strlen( $ignored_file ) - 2 ) );
 					}
 						return "--exclude='{$ignored_file}'";
-				}, $ignored_files
+				},
+				$ignored_files
 			);
 			$excludes = implode( ' ', $excludes );
 			$cmd      = "tar {$excludes} -zcvf {$archive_file} {$archive_base}";
