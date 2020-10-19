@@ -137,7 +137,7 @@ class Dist_Archive_Command {
 			if ( ! empty( $excludes ) ) {
 				$excludes = ' --exclude ' . $excludes;
 			}
-			$cmd = "zip -r {$archive_file} {$archive_base} {$excludes}";
+			$cmd = "zip -r '{$archive_file}' {$archive_base} {$excludes}";
 		} elseif ( 'targz' === $assoc_args['format'] ) {
 			$excludes = array_map(
 				function( $ignored_file ) {
