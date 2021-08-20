@@ -122,8 +122,8 @@ class Dist_Archive_Command {
 			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $plugin_dirname . $version . '.' . time();
 			$new_path       = $tmp_dir . DIRECTORY_SEPARATOR . $plugin_dirname;
 			mkdir( $new_path, 0777, true );
-			// phpcs:ignore Squiz.PHP.DisallowMultipleAssignments.Found
-			foreach ( $iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $path, \RecursiveDirectoryIterator::SKIP_DOTS ), \RecursiveIteratorIterator::SELF_FIRST ) as $item ) {
+			$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $path, \RecursiveDirectoryIterator::SKIP_DOTS ), \RecursiveIteratorIterator::SELF_FIRST );
+			foreach ( $iterator as $item ) {
 				if ( $item->isDir() ) {
 					mkdir( $new_path . DIRECTORY_SEPARATOR . $iterator->getSubPathName() );
 				} else {
