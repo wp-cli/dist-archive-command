@@ -171,3 +171,27 @@ Feature: Generate a distribution archive of a project
       """
     And STDERR should be empty
     And the {RUN_DIR}/some/nested/folder/hello-world.zip file should exist
+
+  Scenario: Generates an archive with another name using the plugin-dirname flag
+	Given a WP install
+
+	When I run `wp scaffold plugin hello-world`
+	Then the wp-content/plugins/hello-world directory should exist
+	And the wp-content/plugins/hello-world/hello-world.php file should exist
+	And the wp-content/plugins/hello-world/.travis.yml file should exist
+	And the wp-content/plugins/hello-world/bin directory should exist
+
+	When I run `wp dist-archive wp-content/plugins/hello-world --plugin-dirname=foobar-world`
+	Then STDOUT should be:
+      """
+      Success: Created foobar-world.0.1.0.zip
+      """
+	And STDERR should be empty
+	And the wp-content/plugins/foobar-world.0.1.0.zip file should exist
+
+	When I run `wp plugin delete hello-world`
+	Then the wp-content/plugins/hello-world directory should not exist
+
+	When I run `wp plugin install wp-content/plugins/foobar-world.0.1.0.zip`
+	Then the wp-content/plugins/foobar-world directory should exist
+	And the wp-content/plugins/foobar-world/hello-world.php file should exist
