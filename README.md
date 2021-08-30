@@ -10,7 +10,7 @@ Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contr
 ## Using
 
 ~~~
-wp dist-archive <path> [<target>] [--create-target-dir] [--format=<format>]
+wp dist-archive <path> [<target>] [--create-target-dir] [--plugin-dirname=<plugin-slug>] [--format=<format>]
 ~~~
 
 For a plugin in a directory 'wp-content/plugins/hello-world', this command
@@ -28,7 +28,7 @@ with a .distignore file in your project repository:
 circle.yml
 ```
 
-Use one distibution archive command for many projects, instead of a bash
+Use one distribution archive command for many projects, instead of a bash
 script in each project.
 
 **OPTIONS**
@@ -41,6 +41,9 @@ script in each project.
 
 	[--create-target-dir]
 		Automatically create the target directory as needed.
+
+	[--plugin-dirname=<plugin-slug>]
+		Set the archive extract directory name. Defaults to project directory name.
 
 	[--format=<format>]
 		Choose the format for the archive.
