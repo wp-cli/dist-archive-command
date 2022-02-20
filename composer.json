@@ -52,10 +52,5 @@
             "@phpunit",
             "@behat"
         ]
-    },
-    "config": {
-        "allow-plugins": {
-            "dealerdirect/phpcodesniffer-composer-installer": true
-        }
     }
 }

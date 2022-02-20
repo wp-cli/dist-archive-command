@@ -150,6 +150,15 @@ class Dist_Archive_Command {
 			$this->maybe_create_directory( $archive_file );
 		}
 
+		if ( is_dir( $archive_file ) ) {
+			$archive_file = rtrim( $archive_file, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . $archive_base . $version;
+			if ( 'zip' === $assoc_args['format'] ) {
+				$archive_file .= '.zip';
+			} elseif ( 'targz' === $assoc_args['format'] ) {
+				$archive_file .= '.tar.gz';
+			}
+		}
+
 		if ( ! is_dir( dirname( $archive_file ) ) ) {
 			WP_CLI::error( "Target directory does not exist: {$archive_file}" );
 		}
