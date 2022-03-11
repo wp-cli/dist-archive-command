@@ -35,8 +35,8 @@ class Dist_Archive_Command {
 	 *
 	 * [<target>]
 	 * : Path and optional file name for the distribution archive.
-	 * If only a path is provided the file name defaults to project directory name plus version, if a version is discoverable.
-	 * Also, when only a path is given the Directory provided has to already exists for the command to function correctly.
+	 * If only a path is provided, the file name defaults to the project directory name plus the version, if discoverable.
+	 * Also, if only a path is given, the directory that it points to has to already exist for the command to function correctly.
 	 *
 	 * [--create-target-dir]
 	 * : Automatically create the target directory as needed.
