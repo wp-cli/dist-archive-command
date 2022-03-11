@@ -95,9 +95,9 @@ class Dist_Archive_Command {
 		$version = '';
 		foreach ( glob( $path . '/*.php' ) as $php_file ) {
 			$contents = file_get_contents( $php_file, false, null, 0, 5000 );
-			$version = $this->get_version_in_code($contents);
-			if( ! empty( $version ) ) {
-				$version = '.' . trim($version);
+			$version  = $this->get_version_in_code( $contents );
+			if ( ! empty( $version ) ) {
+				$version = '.' . trim( $version );
 				break;
 			}
 		}
@@ -216,20 +216,18 @@ class Dist_Archive_Command {
 	 * @param string $code_str the source code string to look into
 	 * @return null|string the version string
 	 */
-
-	private static function get_version_in_code($code_str)
-	{
+	private static function get_version_in_code( $code_str ) {
 		$tokens = array_values(
 			array_filter(
-				token_get_all($code_str),
-				function ($token) {
-					return !is_array($token) || $token[0] !== T_WHITESPACE;
+				token_get_all( $code_str ),
+				function ( $token ) {
+					return ! is_array( $token ) || T_WHITESPACE !== $token[0];
 				}
 			)
 		);
 		foreach ( $tokens as $token ) {
-			if ( $token[0] == T_DOC_COMMENT	) {
-				$version = self::get_version_in_docblock($token[1]);
+			if ( T_DOC_COMMENT === $token[0] ) {
+				$version = self::get_version_in_docblock( $token[1] );
 				if ( null !== $version ) {
 					return $version;
 				}
@@ -244,10 +242,9 @@ class Dist_Archive_Command {
 	 * @param string $docblock
 	 * @return null|string The content of the version tag
 	*/
-	private static function get_version_in_docblock($docblock)
-	{
-		$docblocktags = self::parse_doc_block($docblock);
-		if ( isset($docblocktags['version'] ) ) {
+	private static function get_version_in_docblock( $docblock ) {
+		$docblocktags = self::parse_doc_block( $docblock );
+		if ( isset( $docblocktags['version'] ) ) {
 			return $docblocktags['version'];
 		}
 		return null;
@@ -264,23 +261,24 @@ class Dist_Archive_Command {
 	 * @param string $docblock
 	 * @return array
 	*/
-	private static function parse_doc_block($docblock): array
-	{
+	private static function parse_doc_block( $docblock ) {
 		$tag_documentor = '{@([a-zA-Z0-9-_\\\]+)\s*?(.*)?}';
-		$tag_property = '{\s*\*?\s*(.*?)\:(.*)}';
-		$lines = explode(PHP_EOL, $docblock);
-		$tags = [];
-		$prose = [];
-		foreach ($lines as $line) {
-			if (0 === preg_match($tag_documentor, $line, $matches)) {
-				if (0 === preg_match($tag_property, $line, $matches)) {
+		$tag_property   = '{\s*\*?\s*(.*?):(.*)}';
+		$lines          = explode( PHP_EOL, $docblock );
+		$tags           = [];
+
+		foreach ( $lines as $line ) {
+			if ( 0 === preg_match( $tag_documentor, $line, $matches ) ) {
+				if ( 0 === preg_match( $tag_property, $line, $matches ) ) {
 					continue;
 				}
 			}
-			$tagName = strtolower($matches[1]);
-			$metadata = trim($matches[2] ?? '');
-			$tags[$tagName] = $metadata;
+
+			$tag_name = strtolower( $matches[1] );
+			$metadata = trim( isset( $matches[2] ) ? $matches[2] : '' );
+
+			$tags[ $tag_name ] = $metadata;
 		}
 		return $tags;
-    }
+	}
 }
