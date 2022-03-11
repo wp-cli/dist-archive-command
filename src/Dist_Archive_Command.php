@@ -95,8 +95,9 @@ class Dist_Archive_Command {
 		$version = '';
 		foreach ( glob( $path . '/*.php' ) as $php_file ) {
 			$contents = file_get_contents( $php_file, false, null, 0, 5000 );
-			if ( preg_match( '#\* Version:(.+)#', $contents, $matches ) ) {
-				$version = '.' . trim( $matches[1] );
+			$version  = $this->get_version_in_code( $contents );
+			if ( ! empty( $version ) ) {
+				$version = '.' . trim( $version );
 				break;
 			}
 		}
@@ -122,7 +123,10 @@ class Dist_Archive_Command {
 			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $plugin_dirname . $version . '.' . time();
 			$new_path       = $tmp_dir . DIRECTORY_SEPARATOR . $plugin_dirname;
 			mkdir( $new_path, 0777, true );
-			$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $path, \RecursiveDirectoryIterator::SKIP_DOTS ), \RecursiveIteratorIterator::SELF_FIRST );
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
+				RecursiveIteratorIterator::SELF_FIRST
+			);
 			foreach ( $iterator as $item ) {
 				if ( $item->isDir() ) {
 					mkdir( $new_path . DIRECTORY_SEPARATOR . $iterator->getSubPathName() );
@@ -189,7 +193,7 @@ class Dist_Archive_Command {
 			$filename = pathinfo( $archive_file, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
 		} else {
-			$error = $ret->stderr ? $ret->stderr : $ret->stdout;
+			$error = $ret->stderr ?: $ret->stdout;
 			WP_CLI::error( $error );
 		}
 	}
@@ -205,5 +209,81 @@ class Dist_Archive_Command {
 		if ( ! is_dir( $directory ) ) {
 			mkdir( $directory, $mode = 0777, $recursive = true );
 		}
+	}
+
+	/**
+	 * Gets the content of a version tag in any doc block in the given source code string.
+	 *
+	 * The version tag might be specified as "@version x.y.z" or "Version: x.y.z" and it can
+	 * be preceded by an asterisk (*).
+	 *
+	 * @param string $code_str The source code string to look into.
+	 * @return null|string The detected version string.
+	 */
+	private function get_version_in_code( $code_str ) {
+		$tokens = array_values(
+			array_filter(
+				token_get_all( $code_str ),
+				function ( $token ) {
+					return ! is_array( $token ) || T_WHITESPACE !== $token[0];
+				}
+			)
+		);
+		foreach ( $tokens as $token ) {
+			if ( T_DOC_COMMENT === $token[0] ) {
+				$version = $this->get_version_in_docblock( $token[1] );
+				if ( null !== $version ) {
+					return $version;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Gets the content of a version tag in a docblock.
+	 *
+	 * @param string $docblock Docblock to parse.
+	 * @return null|string The content of the version tag.
+	*/
+	private function get_version_in_docblock( $docblock ) {
+		$docblocktags = $this->parse_doc_block( $docblock );
+		if ( isset( $docblocktags['version'] ) ) {
+			return $docblocktags['version'];
+		}
+		return null;
+	}
+
+	/**
+	 * Parses a docblock and gets an array of tags with their values.
+	 *
+	 * The tags might be specified as "@version x.y.z" or "Version: x.y.z" and they can
+	 * be preceded by an asterisk (*).
+	 *
+	 * This code is based on the 'phpactor' package.
+	 * @see https://github.com/phpactor/docblock/blob/master/lib/Parser.php
+	 *
+	 * @param string $docblock Docblock to parse.
+	 * @return array Associative array of parsed data.
+	*/
+	private function parse_doc_block( $docblock ) {
+		$tag_documentor = '{@([a-zA-Z0-9-_\\\]+)\s*?(.*)?}';
+		$tag_property   = '{\s*\*?\s*(.*?):(.*)}';
+		$lines          = explode( PHP_EOL, $docblock );
+		$tags           = [];
+
+		foreach ( $lines as $line ) {
+			if ( 0 === preg_match( $tag_documentor, $line, $matches ) ) {
+				if ( 0 === preg_match( $tag_property, $line, $matches ) ) {
+					continue;
+				}
+			}
+
+			$tag_name = strtolower( $matches[1] );
+			$metadata = trim( isset( $matches[2] ) ? $matches[2] : '' );
+
+			$tags[ $tag_name ] = $metadata;
+		}
+		return $tags;
 	}
 }
