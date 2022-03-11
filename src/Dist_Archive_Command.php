@@ -209,12 +209,13 @@ class Dist_Archive_Command {
 	}
 
 	/**
-	 * Gets the content of a version tag in any doc block in the given source code string
+	 * Gets the content of a version tag in any doc block in the given source code string.
 	 *
-	 * The version tag might be specified as @version x.y.z or Version: x.y.z and it might be preceeded by an *
+	 * The version tag might be specified as "@version x.y.z" or "Version: x.y.z" and it can
+	 * be preceded by an asterisk (*).
 	 *
-	 * @param string $code_str the source code string to look into
-	 * @return null|string the version string
+	 * @param string $code_str The source code string to look into.
+	 * @return null|string The detected version string.
 	 */
 	private static function get_version_in_code( $code_str ) {
 		$tokens = array_values(
@@ -237,10 +238,10 @@ class Dist_Archive_Command {
 	}
 
 	/**
-	 * Gets the content of a version tag in a docblock
+	 * Gets the content of a version tag in a docblock.
 	 *
-	 * @param string $docblock
-	 * @return null|string The content of the version tag
+	 * @param string $docblock Docblock to parse.
+	 * @return null|string The content of the version tag.
 	*/
 	private static function get_version_in_docblock( $docblock ) {
 		$docblocktags = self::parse_doc_block( $docblock );
@@ -251,15 +252,16 @@ class Dist_Archive_Command {
 	}
 
 	/**
-	 * Parses a docblock and gets an array of tags with their values
+	 * Parses a docblock and gets an array of tags with their values.
 	 *
-	 * The tags might be specified as @version x.y.z or Version: x.y.z and they might be preceeded by an *
+	 * The tags might be specified as "@version x.y.z" or "Version: x.y.z" and they can
+	 * be preceded by an asterisk (*).
 	 *
-	 * This code is based on the phpactor package, namely:
-	 *    https://github.com/phpactor/docblock/blob/master/lib/Parser.php
+	 * This code is based on the 'phpactor' package.
+	 * @see https://github.com/phpactor/docblock/blob/master/lib/Parser.php
 	 *
-	 * @param string $docblock
-	 * @return array
+	 * @param string $docblock Docblock to parse.
+	 * @return array Associative array of parsed data.
 	*/
 	private static function parse_doc_block( $docblock ) {
 		$tag_documentor = '{@([a-zA-Z0-9-_\\\]+)\s*?(.*)?}';
