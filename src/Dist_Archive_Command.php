@@ -34,7 +34,9 @@ class Dist_Archive_Command {
 	 * : Path to the project that includes a .distignore file.
 	 *
 	 * [<target>]
-	 * : Path and file name for the distribution archive. Defaults to project directory name plus version, if discoverable.
+	 * : Path and optional file name for the distribution archive.
+	 * If only a path is provided the file name defaults to project directory name plus version, if a version is discoverable.
+	 * Also, when only a path is given the Directory provided has to already exists for the command to function correctly.
 	 *
 	 * [--create-target-dir]
 	 * : Automatically create the target directory as needed.
