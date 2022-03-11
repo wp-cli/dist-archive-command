@@ -123,7 +123,10 @@ class Dist_Archive_Command {
 			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $plugin_dirname . $version . '.' . time();
 			$new_path       = $tmp_dir . DIRECTORY_SEPARATOR . $plugin_dirname;
 			mkdir( $new_path, 0777, true );
-			$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $path, \RecursiveDirectoryIterator::SKIP_DOTS ), \RecursiveIteratorIterator::SELF_FIRST );
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
+				RecursiveIteratorIterator::SELF_FIRST
+			);
 			foreach ( $iterator as $item ) {
 				if ( $item->isDir() ) {
 					mkdir( $new_path . DIRECTORY_SEPARATOR . $iterator->getSubPathName() );
@@ -190,7 +193,7 @@ class Dist_Archive_Command {
 			$filename = pathinfo( $archive_file, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
 		} else {
-			$error = $ret->stderr ? $ret->stderr : $ret->stdout;
+			$error = $ret->stderr ?: $ret->stdout;
 			WP_CLI::error( $error );
 		}
 	}
@@ -216,7 +219,7 @@ class Dist_Archive_Command {
 	 * @param string $code_str the source code string to look into
 	 * @return null|string the version string
 	 */
-	private static function get_version_in_code( $code_str ) {
+	private function get_version_in_code( $code_str ) {
 		$tokens = array_values(
 			array_filter(
 				token_get_all( $code_str ),
@@ -227,7 +230,7 @@ class Dist_Archive_Command {
 		);
 		foreach ( $tokens as $token ) {
 			if ( T_DOC_COMMENT === $token[0] ) {
-				$version = self::get_version_in_docblock( $token[1] );
+				$version = $this->get_version_in_docblock( $token[1] );
 				if ( null !== $version ) {
 					return $version;
 				}
@@ -242,8 +245,8 @@ class Dist_Archive_Command {
 	 * @param string $docblock
 	 * @return null|string The content of the version tag
 	*/
-	private static function get_version_in_docblock( $docblock ) {
-		$docblocktags = self::parse_doc_block( $docblock );
+	private function get_version_in_docblock( $docblock ) {
+		$docblocktags = $this->parse_doc_block( $docblock );
 		if ( isset( $docblocktags['version'] ) ) {
 			return $docblocktags['version'];
 		}
@@ -261,7 +264,7 @@ class Dist_Archive_Command {
 	 * @param string $docblock
 	 * @return array
 	*/
-	private static function parse_doc_block( $docblock ) {
+	private function parse_doc_block( $docblock ) {
 		$tag_documentor = '{@([a-zA-Z0-9-_\\\]+)\s*?(.*)?}';
 		$tag_property   = '{\s*\*?\s*(.*?):(.*)}';
 		$lines          = explode( PHP_EOL, $docblock );
