@@ -37,8 +37,7 @@ script in each project.
 		Path to the project that includes a .distignore file.
 
 	[<target>]
-		Path and optional file name for the distribution archive. If only a path is provided the file name defaults to project directory name plus version, if discoverable.
-        If only a path if given it has to exists to function correctly.
+		Path and file name for the distribution archive. Defaults to project directory name plus version, if discoverable.
 
 	[--create-target-dir]
 		Automatically create the target directory as needed.
