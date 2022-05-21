@@ -226,19 +226,19 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should not exist
 
   Scenario: Warns but continues when no distignore file is present
-	Given an empty directory
-	And a test-plugin.php file:
+    Given an empty directory
+    And a test-plugin.php file:
       """
       <?php
-	  /**
-	   * Plugin Name:       Test Plugin
-	   * Version:           1.0.0
-	   */
+      /**
+       * Plugin Name:       Test Plugin
+       * Version:           1.0.0
+       */
       """
 
-	When I try `wp dist-archive . test-plugin.zip`
-	Then STDERR should contain:
+    When I try `wp dist-archive . test-plugin.zip`
+    Then STDERR should contain:
       """
-	  No .distignore file found. All files in directory included in archive.
+      No .distignore file found. All files in directory included in archive.
       """
-	And the test-plugin.zip file should exist
+    And the test-plugin.zip file should exist
