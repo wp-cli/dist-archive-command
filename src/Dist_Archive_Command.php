@@ -57,30 +57,29 @@ class Dist_Archive_Command {
 	 */
 	public function __invoke( $args, $assoc_args ) {
 		list( $path ) = $args;
-		$path = rtrim( realpath( $path ), '/' );
+		$path         = rtrim( realpath( $path ), '/' );
 		if ( ! is_dir( $path ) ) {
 			WP_CLI::error( 'Provided input path is not a directory.' );
 		}
 
 		if ( isset( $args[1] ) ) {
 			// If the end of the string is a filename (file.ext), use it for the output archive filename.
-			if( 1 === preg_match('/^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\.[a-zA-Z0-9_-]+$/', basename( $args[1] ) ) ) {
+			if ( 1 === preg_match( '/^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\.[a-zA-Z0-9_-]+$/', basename( $args[1] ) ) ) {
 				$archive_filename = basename( $args[1] );
 
 				// If only the filename was supplied, use the plugin's parent directory for output.
-				if( basename( $args[1] ) === $args[1] ) {
+				if ( basename( $args[1] ) === $args[1] ) {
 					$archive_path = dirname( $path );
 				} else {
 					// Otherwise use the supplied directory.
 					$archive_path = dirname( $args[1] );
 				}
 			} else {
-				$archive_path = $args[1];
+				$archive_path     = $args[1];
 				$archive_filename = null;
 			}
-
 		} else {
-			if( 0 !== strpos( $path, '/' ) ) {
+			if ( 0 !== strpos( $path, '/' ) ) {
 				$archive_path = dirname( getcwd() . '/' . $path );
 			} else {
 				$archive_path = dirname( $path );
@@ -89,8 +88,8 @@ class Dist_Archive_Command {
 		}
 
 		// If the  path is not absolute, it is relative.
-		if( 0 !== strpos( $archive_path, '/' ) ) {
-			$archive_path =  rtrim( getcwd() . '/' . ltrim( $archive_path, '/' ) , '/' );
+		if ( 0 !== strpos( $archive_path, '/' ) ) {
+			$archive_path = rtrim( getcwd() . '/' . ltrim( $archive_path, '/' ), '/' );
 		}
 
 		$dist_ignore_path = $path . '/.distignore';
