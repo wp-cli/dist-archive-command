@@ -78,7 +78,8 @@ class Dist_Archive_Command {
 
 		$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
 		$ignored_files       = array();
-		$archive_base        = basename( $path );
+		$source_base         = basename( $path );
+		$archive_base        = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
 		foreach ( $maybe_ignored_files as $file ) {
 			$file = trim( $file );
 			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
@@ -87,10 +88,15 @@ class Dist_Archive_Command {
 			if ( is_dir( $path . '/' . $file ) ) {
 				$file = rtrim( $file, '/' ) . '/*';
 			}
+			// If a path is tied to the root of the plugin using `/`, match exactly, otherwise match liberally.
 			if ( 'zip' === $assoc_args['format'] ) {
-				$ignored_files[] = '*/' . $file;
+				$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+					? $archive_base . $file
+					: '*/' . $file;
 			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$ignored_files[] = $file;
+				$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+					? '^' . $archive_base . $file
+					: $file;
 			}
 		}
 
@@ -119,7 +125,7 @@ class Dist_Archive_Command {
 			}
 		}
 
-		if ( isset( $assoc_args['plugin-dirname'] ) && rtrim( $assoc_args['plugin-dirname'], '/' ) !== $archive_base ) {
+		if ( $archive_base !== $source_base ) {
 			$plugin_dirname = rtrim( $assoc_args['plugin-dirname'], '/' );
 			$archive_base   = $plugin_dirname;
 			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $plugin_dirname . $version . '.' . time();
