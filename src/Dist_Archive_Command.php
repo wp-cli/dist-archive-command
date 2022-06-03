@@ -78,7 +78,8 @@ class Dist_Archive_Command {
 
 		$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
 		$ignored_files       = array();
-		$archive_base        = basename( $path );
+		$source_base         = basename( $path );
+		$archive_base        = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
 		foreach ( $maybe_ignored_files as $file ) {
 			$file = trim( $file );
 			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
@@ -119,7 +120,62 @@ class Dist_Archive_Command {
 			}
 		}
 
-		if ( isset( $assoc_args['plugin-dirname'] ) && rtrim( $assoc_args['plugin-dirname'], '/' ) !== $archive_base ) {
+		/**
+		 * Given the path to a directory, check are any of the directories inside it symlinks.
+		 *
+		 * If the plugin contains a symlink, we will first copy it to a temp directory, potentially omitting any
+		 * symlinks that are excluded via the `.distignore` file, avoiding recursive loops as described in #57.
+		 *
+		 * @param string $path The filepath to the directory to check.
+		 *
+		 * @return bool
+		 */
+		$is_path_contains_symlink = function( $path ) {
+
+			if ( ! is_dir( $path ) ) {
+				throw new Exception( 'Path `' . $path . '` is not a directory' );
+			}
+
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
+				RecursiveIteratorIterator::SELF_FIRST
+			);
+
+			/**
+			 * @var RecursiveIteratorIterator $iterator
+			 * @var SplFileInfo $item
+			 */
+			foreach ( $iterator as $item ) {
+				if ( $item->isDir() && is_link( $item->getPath() ) ) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		/**
+		 * Check a file from the plugin against the list of rules in the `.distignore` file.
+		 *
+		 * @param string $relative_filepath Path to the file from the plugin root.
+		 * @param string[] $distignore_entries List of ignore rules.
+		 *
+		 * @return bool True when the file matches a rule in the `.distignore` file.
+		 */
+		$is_ignored_file = function( $relative_filepath, array $distignore_entries ) {
+
+			foreach ( array_filter( $distignore_entries ) as $entry ) {
+				if ( 0 === strpos( $entry, '/' ) ) {
+					$entry = '^' . substr( $entry, 1 );
+				}
+				if ( 1 === preg_match( '/' . preg_quote( $entry, '/' ) . '/', $relative_filepath ) ) {
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		if ( $archive_base !== $source_base || $is_path_contains_symlink( $path ) ) {
 			$plugin_dirname = rtrim( $assoc_args['plugin-dirname'], '/' );
 			$archive_base   = $plugin_dirname;
 			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $plugin_dirname . $version . '.' . time();
@@ -130,6 +186,9 @@ class Dist_Archive_Command {
 				RecursiveIteratorIterator::SELF_FIRST
 			);
 			foreach ( $iterator as $item ) {
+				if ( $is_ignored_file( $iterator->getSubPathName(), $maybe_ignored_files ) ) {
+					continue;
+				}
 				if ( $item->isDir() ) {
 					mkdir( $new_path . DIRECTORY_SEPARATOR . $iterator->getSubPathName() );
 				} else {
