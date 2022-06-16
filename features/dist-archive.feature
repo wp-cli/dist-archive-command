@@ -224,3 +224,37 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/hello-world.php file should exist
     And the wp-content/plugins/hello-world/.travis.yml file should not exist
     And the wp-content/plugins/hello-world/bin directory should not exist
+
+Scenario: Avoids recursive symlink
+  Given a WP install in wordpress
+  And a .distignore file:
+      """
+      wp-content
+      wordpress
+      """
+
+  When I run `mkdir -p wp-content/plugins`
+  Then STDERR should be empty
+
+  When I run `rm -rf wordpress/wp-content`
+  Then STDERR should be empty
+
+  When I run `ln -s {RUN_DIR}/wp-content {RUN_DIR}/wordpress/wp-content`
+  Then STDERR should be empty
+
+  When I run `wp scaffold plugin hello-world --path=wordpress`
+  Then the wp-content/plugins/hello-world directory should exist
+  And the wp-content/plugins/hello-world/hello-world.php file should exist
+
+  When I run `mv wp-content/plugins/hello-world/hello-world.php .`
+  Then STDERR should be empty
+
+  When I run `rm -rf wp-content/plugins/hello-world`
+  Then STDERR should be empty
+
+  When I run `ln -s {RUN_DIR} {RUN_DIR}/wp-content/plugins/hello-world`
+  Then STDERR should be empty
+  And the wp-content/plugins/hello-world/hello-world.php file should exist
+
+  When I run `wp dist-archive . --plugin-dirname=$(basename "{RUN_DIR}")`
+  Then STDERR should be empty

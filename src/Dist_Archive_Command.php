@@ -146,7 +146,7 @@ class Dist_Archive_Command {
 			 * @var SplFileInfo $item
 			 */
 			foreach ( $iterator as $item ) {
-				if ( $item->isDir() && is_link( $item->getPath() ) ) {
+				if ( is_link( $item->getPathname() ) ) {
 					return true;
 				}
 			}
