@@ -196,7 +196,7 @@ class Dist_Archive_Command {
 		}
 
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
-		$ret = WP_CLI::launch( escapeshellcmd( $cmd ), false, true );
+		$ret = WP_CLI::launch( $this->escapeshellcmd( $cmd, array( '^' ) ), false, true );
 		if ( 0 === $ret->return_code ) {
 			$filename = pathinfo( $archive_file, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
@@ -293,5 +293,28 @@ class Dist_Archive_Command {
 			$tags[ $tag_name ] = $metadata;
 		}
 		return $tags;
+	}
+
+	/**
+	 * Run PHP's escapeshellcmd() then undo escaping known intentional characters.
+	 *
+	 * Escaped by default: &#;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped when not paired.
+	 *
+	 * @see escapeshellcmd()
+	 *
+	 * @param string $cmd The shell command to escape.
+	 * @param string[] $whitelist Array of exceptions to allow in the escaped command.
+	 *
+	 * @return string
+	 */
+	protected function escapeshellcmd( $cmd, $whitelist ) {
+
+		$escaped_command = escapeshellcmd( $cmd );
+
+		foreach ( $whitelist as $undo_escape ) {
+			$escaped_command = str_replace( '\\' . $undo_escape, $undo_escape, $escaped_command );
+		}
+
+		return $escaped_command;
 	}
 }
