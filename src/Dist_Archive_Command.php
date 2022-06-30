@@ -93,13 +93,15 @@ class Dist_Archive_Command {
 		}
 
 		$dist_ignore_path = $path . '/.distignore';
-		if ( ! file_exists( $dist_ignore_path ) ) {
-			WP_CLI::error( 'No .distignore file found.' );
+		if ( file_exists( $dist_ignore_path ) ) {
+			$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
+		} else {
+			WP_CLI::warning( 'No .distignore file found. All files in directory included in archive.' );
+			$maybe_ignored_files = array();
 		}
 
-		$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
-		$ignored_files       = array();
-		$archive_base        = basename( $path );
+		$ignored_files = array();
+		$archive_base  = basename( $path );
 		foreach ( $maybe_ignored_files as $file ) {
 			$file = trim( $file );
 			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
