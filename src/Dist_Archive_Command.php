@@ -170,7 +170,7 @@ class Dist_Archive_Command {
 
 				$pattern = '/' . preg_quote( $pattern, '/' ) . '/';
 
-				$pattern = str_replace(  '&ast;','.*', $pattern );
+				$pattern = str_replace( '&ast;', '.*', $pattern );
 
 				// If the entry is tied to the beginning of the path, add the `^` regex symbol.
 				if ( 0 === strpos( $entry, '/' ) ) {
@@ -179,7 +179,7 @@ class Dist_Archive_Command {
 
 				// If the entry begins with `.` (hidden files), tie it to the beginning of directories.
 				if ( 0 === strpos( $entry, '.' ) ) {
-					$pattern = '/[^\/]' . substr( $pattern, 1);
+					$pattern = '/[^\/]' . substr( $pattern, 1 );
 				}
 
 				if ( 1 === preg_match( $pattern, $relative_filepath ) ) {
