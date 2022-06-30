@@ -164,10 +164,25 @@ class Dist_Archive_Command {
 		$is_ignored_file = function( $relative_filepath, array $distignore_entries ) {
 
 			foreach ( array_filter( $distignore_entries ) as $entry ) {
+
+				// We don't want to quote `*` in regex pattern, later we'll replace it with `.*`.
+				$pattern = str_replace( '*', '&ast;', $entry );
+
+				$pattern = '/' . preg_quote( $pattern, '/' ) . '/';
+
+				$pattern = str_replace(  '&ast;','.*', $pattern );
+
+				// If the entry is tied to the beginning of the path, add the `^` regex symbol.
 				if ( 0 === strpos( $entry, '/' ) ) {
-					$entry = '^' . substr( $entry, 1 );
+					$pattern = '/^' . substr( $pattern, 3 );
 				}
-				if ( 1 === preg_match( '/' . preg_quote( $entry, '/' ) . '/', $relative_filepath ) ) {
+
+				// If the entry begins with `.` (hidden files), tie it to the beginning of directories.
+				if ( 0 === strpos( $entry, '.' ) ) {
+					$pattern = '/[^\/]' . substr( $pattern, 1);
+				}
+
+				if ( 1 === preg_match( $pattern, $relative_filepath ) ) {
 					return true;
 				}
 			}
