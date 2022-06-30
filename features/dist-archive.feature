@@ -46,7 +46,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp plugin delete hello-world`
     Then the wp-content/plugins/hello-world directory should not exist
 
-    When I run `cd wp-content/plugins/ && tar -zxvf hello-world.0.1.0.tar.gz`
+    When I try `cd wp-content/plugins/ && tar -zxvf hello-world.0.1.0.tar.gz`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
     And the wp-content/plugins/hello-world/.travis.yml file should not exist
@@ -138,7 +138,7 @@ Feature: Generate a distribution archive of a project
     When I run `rm -rf foo`
     Then the foo directory should not exist
 
-    When I run `<extract> foo.<extension>`
+    When I try `<extract> foo.<extension>`
     Then the foo directory should exist
     And the foo/test.php file should exist
     And the foo/test-dir/test.php file should exist
@@ -205,7 +205,9 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/.travis.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
-    When I run `sed -i wp-content/plugins/hello-world/hello-world.php -e "s/* Version/Version/" -e "s/0.1.0/0.2.0/"`
+    When I run `awk '{sub("\\* Version","Version",$0); print}' {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php > hello-world.tmp && mv hello-world.tmp {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php`
+    Then STDERR should be empty
+    When I run `awk '{sub("0.1.0","0.2.0",$0); print}' {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php > hello-world.tmp && mv hello-world.tmp {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php`
     Then STDERR should be empty
 
     When I run `wp dist-archive wp-content/plugins/hello-world`
