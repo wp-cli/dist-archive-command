@@ -161,7 +161,7 @@ class Dist_Archive_Command {
 		 *
 		 * @return bool True when the file matches a rule in the `.distignore` file.
 		 */
-		$is_ignored_file = function( $relative_filepath, array $distignore_entries ) {
+		$is_ignored_file = static function ( $relative_filepath, array $distignore_entries ) {
 
 			foreach ( array_filter( $distignore_entries ) as $entry ) {
 
