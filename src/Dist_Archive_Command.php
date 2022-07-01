@@ -130,7 +130,7 @@ class Dist_Archive_Command {
 		 *
 		 * @return bool
 		 */
-		$is_path_contains_symlink = function( $path ) {
+		$is_path_contains_symlink = static function ( $path ) {
 
 			if ( ! is_dir( $path ) ) {
 				throw new Exception( 'Path `' . $path . '` is not a directory' );
