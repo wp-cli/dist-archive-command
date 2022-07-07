@@ -203,6 +203,63 @@ Feature: Generate a distribution archive of a project
       | zip     | zip       | unzip     |
       | targz   | tar.gz    | tar -zxvf |
 
+  Scenario Outline: Ignores files specified with absolute path and not similarly named files
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      /maybe-ignore-me.txt
+      """
+    And a foo/test.php file:
+      """
+      <?php
+      echo 'Hello world;';
+      """
+    And a foo/test-dir/test.php file:
+      """
+      <?php
+      echo 'Hello world;';
+      """
+    And a foo/maybe-ignore-me.txt file:
+      """
+      Ignore
+      """
+    And a foo/test-dir/maybe-ignore-me.txt file:
+      """
+      Do not ignore
+      """
+    And a foo/test-dir/foo/maybe-ignore-me.txt file:
+      """
+      Do not ignore
+      """
+
+    When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
+    Then STDOUT should be:
+      """
+      Success: Created <plugin-dirname>.<extension>
+      """
+    And the <plugin-dirname>.<extension> file should exist
+
+    When I run `rm -rf foo`
+    Then the foo directory should not exist
+
+    When I run `rm -rf <plugin-dirname>`
+    Then the <plugin-dirname> directory should not exist
+
+    When I try `<extract> <plugin-dirname>.<extension>`
+    Then the <plugin-dirname> directory should exist
+    And the <plugin-dirname>/test.php file should exist
+    And the <plugin-dirname>/test-dir/test.php file should exist
+    And the <plugin-dirname>/maybe-ignore-me.txt file should not exist
+    And the <plugin-dirname>/test-dir/maybe-ignore-me.txt file should exist
+    And the <plugin-dirname>/test-dir/foo/maybe-ignore-me.txt file should exist
+
+    Examples:
+      | format  | extension | extract   | plugin-dirname |
+      | zip     | zip       | unzip     | foo            |
+      | targz   | tar.gz    | tar -zxvf | foo            |
+      | zip     | zip       | unzip     | bar            |
+      | targz   | tar.gz    | tar -zxvf | bar2           |
+
   Scenario: Create directories automatically if requested
     Given a WP install
 
@@ -400,4 +457,3 @@ Scenario: Avoids recursive symlink
       No .distignore file found. All files in directory included in archive.
       """
     And the test-plugin.1.0.0.zip file should exist
-

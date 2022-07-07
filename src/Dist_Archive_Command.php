@@ -100,10 +100,9 @@ class Dist_Archive_Command {
 			$maybe_ignored_files = array();
 		}
 
-		$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
-		$ignored_files       = array();
-		$source_base         = basename( $path );
-		$archive_base        = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
+		$ignored_files = array();
+		$source_base   = basename( $path );
+		$archive_base  = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
 
 		foreach ( $maybe_ignored_files as $file ) {
 			$file = trim( $file );
@@ -113,10 +112,15 @@ class Dist_Archive_Command {
 			if ( is_dir( $path . '/' . $file ) ) {
 				$file = rtrim( $file, '/' ) . '/*';
 			}
+			// If a path is tied to the root of the plugin using `/`, match exactly, otherwise match liberally.
 			if ( 'zip' === $assoc_args['format'] ) {
-				$ignored_files[] = '*/' . $file;
+				$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+					? $archive_base . $file
+					: '*/' . $file;
 			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$ignored_files[] = $file;
+				$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+					? '^' . $archive_base . $file
+					: $file;
 			}
 		}
 
@@ -281,7 +285,7 @@ class Dist_Archive_Command {
 		}
 
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
-		$ret = WP_CLI::launch( escapeshellcmd( $cmd ), false, true );
+		$ret = WP_CLI::launch( $this->escapeshellcmd( $cmd, array( '^' ) ), false, true );
 		if ( 0 === $ret->return_code ) {
 			$filename = pathinfo( $archive_filepath, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
@@ -378,5 +382,28 @@ class Dist_Archive_Command {
 			$tags[ $tag_name ] = $metadata;
 		}
 		return $tags;
+	}
+
+	/**
+	 * Run PHP's escapeshellcmd() then undo escaping known intentional characters.
+	 *
+	 * Escaped by default: &#;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped when not paired.
+	 *
+	 * @see escapeshellcmd()
+	 *
+	 * @param string $cmd The shell command to escape.
+	 * @param string[] $whitelist Array of exceptions to allow in the escaped command.
+	 *
+	 * @return string
+	 */
+	protected function escapeshellcmd( $cmd, $whitelist ) {
+
+		$escaped_command = escapeshellcmd( $cmd );
+
+		foreach ( $whitelist as $undo_escape ) {
+			$escaped_command = str_replace( '\\' . $undo_escape, $undo_escape, $escaped_command );
+		}
+
+		return $escaped_command;
 	}
 }
