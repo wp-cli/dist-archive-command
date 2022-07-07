@@ -258,7 +258,7 @@ Feature: Generate a distribution archive of a project
       | zip     | zip       | unzip     | foo            |
       | targz   | tar.gz    | tar -zxvf | foo            |
       | zip     | zip       | unzip     | bar            |
-      | targz   | tar.gz    | tar -zxvf | bar            |
+      | targz   | tar.gz    | tar -zxvf | bar2           |
 
   Scenario: Create directories automatically if requested
     Given a WP install
@@ -408,7 +408,7 @@ Feature: Generate a distribution archive of a project
 
   Scenario: Warns but continues when no distignore file is present
     Given an empty directory
-    And a test-plugin.php file:
+    And a test-plugin/test-plugin.php file:
       """
       <?php
       /**
@@ -417,9 +417,9 @@ Feature: Generate a distribution archive of a project
        */
       """
 
-    When I try `wp dist-archive . test-plugin.zip`
+    When I try `wp dist-archive test-plugin`
     Then STDERR should contain:
       """
       No .distignore file found. All files in directory included in archive.
       """
-    And the test-plugin.zip file should exist
+    And the test-plugin.1.0.0.zip file should exist
