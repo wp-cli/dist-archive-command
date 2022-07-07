@@ -182,43 +182,6 @@ class Dist_Archive_Command {
 			return false;
 		};
 
-		/**
-		 * Check a file from the plugin against the list of rules in the `.distignore` file.
-		 *
-		 * @param string $relative_filepath Path to the file from the plugin root.
-		 * @param string[] $distignore_entries List of ignore rules.
-		 *
-		 * @return bool True when the file matches a rule in the `.distignore` file.
-		 */
-		$is_ignored_file = static function ( $relative_filepath, array $distignore_entries ) {
-
-			foreach ( array_filter( $distignore_entries ) as $entry ) {
-
-				// We don't want to quote `*` in regex pattern, later we'll replace it with `.*`.
-				$pattern = str_replace( '*', '&ast;', $entry );
-
-				$pattern = '/' . preg_quote( $pattern, '/' ) . '/';
-
-				$pattern = str_replace( '&ast;', '.*', $pattern );
-
-				// If the entry is tied to the beginning of the path, add the `^` regex symbol.
-				if ( 0 === strpos( $entry, '/' ) ) {
-					$pattern = '/^' . substr( $pattern, 3 );
-				}
-
-				// If the entry begins with `.` (hidden files), tie it to the beginning of directories.
-				if ( 0 === strpos( $entry, '.' ) ) {
-					$pattern = '/[^\/]' . substr( $pattern, 1 );
-				}
-
-				if ( 1 === preg_match( $pattern, $relative_filepath ) ) {
-					return true;
-				}
-			}
-
-			return false;
-		};
-
 		if ( $archive_base !== $source_base || $is_path_contains_symlink( $path ) ) {
 			$plugin_dirname = rtrim( $assoc_args['plugin-dirname'], '/' );
 			$archive_base   = $plugin_dirname;
@@ -230,7 +193,7 @@ class Dist_Archive_Command {
 				RecursiveIteratorIterator::SELF_FIRST
 			);
 			foreach ( $iterator as $item ) {
-				if ( $is_ignored_file( $iterator->getSubPathName(), $maybe_ignored_files ) ) {
+				if ( $this->is_ignored_file( $iterator->getSubPathName(), $maybe_ignored_files ) ) {
 					continue;
 				}
 				if ( $item->isDir() ) {
@@ -406,4 +369,43 @@ class Dist_Archive_Command {
 
 		return $escaped_command;
 	}
+
+	/**
+	 * Check a file from the plugin against the list of rules in the `.distignore` file.
+	 *
+	 * @param string $relative_filepath Path to the file from the plugin root.
+	 * @param string[] $distignore_entries List of ignore rules.
+	 *
+	 * @return bool True when the file matches a rule in the `.distignore` file.
+	 */
+	public function is_ignored_file( $relative_filepath, array $distignore_entries ) {
+
+		foreach ( array_filter( $distignore_entries ) as $entry ) {
+
+			// We don't want to quote `*` in regex pattern, later we'll replace it with `.*`.
+			$pattern = str_replace( '*', '&ast;', $entry );
+
+			$pattern = '/' . preg_quote( $pattern, '/' ) . '/';
+
+			$pattern = str_replace( '&ast;', '.*', $pattern );
+
+			// If the entry is tied to the beginning of the path, add the `^` regex symbol.
+			if ( 0 === strpos( $entry, '/' ) ) {
+				$pattern = '/^' . substr( $pattern, 3 );
+			}
+
+			// If the entry begins with `.` (hidden files), tie it to the beginning of directories.
+			if ( 0 === strpos( $entry, '.' ) ) {
+				$pattern = '/(^|\/)' . substr( $pattern, 1 );
+			}
+
+			if ( 1 === preg_match( $pattern, $relative_filepath ) ) {
+				return true;
+			}
+		}
+
+		return false;
+
+	}
+
 }
