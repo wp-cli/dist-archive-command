@@ -155,7 +155,7 @@ class Dist_Archive_Command {
 		 *
 		 * @return bool
 		 */
-		$is_path_contains_symlink = function( $path ) {
+		$is_path_contains_symlink = static function ( $path ) {
 
 			if ( ! is_dir( $path ) ) {
 				throw new Exception( 'Path `' . $path . '` is not a directory' );
@@ -186,7 +186,7 @@ class Dist_Archive_Command {
 		 *
 		 * @return bool True when the file matches a rule in the `.distignore` file.
 		 */
-		$is_ignored_file = function( $relative_filepath, array $distignore_entries ) {
+		$is_ignored_file = static function ( $relative_filepath, array $distignore_entries ) {
 
 			foreach ( array_filter( $distignore_entries ) as $entry ) {
 
