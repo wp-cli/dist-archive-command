@@ -46,13 +46,13 @@ Feature: Generate a distribution archive of a project
     When I run `wp plugin delete hello-world`
     Then the wp-content/plugins/hello-world directory should not exist
 
-    When I run `cd wp-content/plugins/ && tar -zxvf hello-world.0.1.0.tar.gz`
+    When I try `cd wp-content/plugins/ && tar -zxvf hello-world.0.1.0.tar.gz`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
     And the wp-content/plugins/hello-world/.travis.yml file should not exist
     And the wp-content/plugins/hello-world/bin directory should not exist
 
-  Scenario: Generate a ZIP archive to a custom path
+  Scenario: Generate a ZIP archive with a custom name
     Given a WP install
 
     When I run `wp scaffold plugin hello-world`
@@ -66,8 +66,62 @@ Feature: Generate a distribution archive of a project
       """
       Success: Created hello-world.zip
       """
-    And the hello-world.zip file should exist
+    And the wp-content/plugins/hello-world.zip file should exist
     And the wp-content/plugins/hello-world.0.1.0.zip file should not exist
+
+  Scenario: Generate a ZIP archive to a relative path without specifying the filename
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `wp dist-archive wp-content/plugins/hello-world wp-content`
+    Then STDOUT should be:
+      """
+      Success: Created hello-world.0.1.0.zip
+      """
+    And the wp-content/hello-world.0.1.0.zip file should exist
+    And the wp-content/plugins/hello-world.0.1.0.zip file should not exist
+
+  Scenario: Generate a ZIP archive to a relative path with a specified filename
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `mkdir subdir`
+    Then the subdir directory should exist
+
+    When I run `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world.zip`
+    Then STDOUT should be:
+        """
+        Success: Created hello-world.zip
+        """
+    And STDERR should be empty
+    And the {RUN_DIR}/subdir/hello-world.zip file should exist
+
+  Scenario: Generate a ZIP archive to an absolute path without specifying the filename
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `wp dist-archive wp-content/plugins/hello-world {RUN_DIR}/wp-content/`
+    Then STDOUT should be:
+        """
+        Success: Created hello-world.0.1.0.zip
+        """
+    And STDERR should be empty
+    And the {RUN_DIR}/wp-content/hello-world.0.1.0.zip file should exist
 
   Scenario: Generate a ZIP archive using version number in composer.json
     Given an empty directory
@@ -138,7 +192,7 @@ Feature: Generate a distribution archive of a project
     When I run `rm -rf foo`
     Then the foo directory should not exist
 
-    When I run `<extract> foo.<extension>`
+    When I try `<extract> foo.<extension>`
     Then the foo directory should exist
     And the foo/test.php file should exist
     And the foo/test-dir/test.php file should exist
@@ -171,6 +225,74 @@ Feature: Generate a distribution archive of a project
       """
     And STDERR should be empty
     And the {RUN_DIR}/some/nested/folder/hello-world.zip file should exist
+
+  Scenario: Allow specifying the current directory for input using dot
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `wp dist-archive . {RUN_DIR}/hello-world.zip` from 'wp-content/plugins/hello-world'
+    Then STDOUT should be:
+        """
+        Success: Created hello-world.zip
+        """
+    And STDERR should be empty
+    And the {RUN_DIR}/hello-world.zip file should exist
+
+  Scenario: Use plugin parent directory for output unless otherwise specified
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `wp dist-archive . hello-world.zip` from 'wp-content/plugins/hello-world'
+    Then STDOUT should be:
+        """
+        Success: Created hello-world.zip
+        """
+    And STDERR should be empty
+    And the {RUN_DIR}/wp-content/plugins/hello-world.zip file should exist
+
+  Scenario: Use current directory for output when specified
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `wp dist-archive . ./hello-world.zip` from 'wp-content/plugins/hello-world'
+    Then STDOUT should be:
+        """
+        Success: Created hello-world.zip
+        """
+    And STDERR should be empty
+    And the {RUN_DIR}/wp-content/plugins/hello-world/hello-world.zip file should exist
+
+  Scenario: Allow specifying the current directory without filename for output using dot
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `wp dist-archive wp-content/plugins/hello-world .`
+    Then STDOUT should be:
+        """
+        Success: Created hello-world.0.1.0.zip
+        """
+    And STDERR should be empty
+    And the {RUN_DIR}/hello-world.0.1.0.zip file should exist
 
   Scenario: Generates an archive with another name using the plugin-dirname flag
     Given a WP install
@@ -205,7 +327,9 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/.travis.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
-    When I run `sed -i wp-content/plugins/hello-world/hello-world.php -e "s/* Version/Version/" -e "s/0.1.0/0.2.0/"`
+    When I run `awk '{sub("\\* Version","Version",$0); print}' {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php > hello-world.tmp && mv hello-world.tmp {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php`
+    Then STDERR should be empty
+    When I run `awk '{sub("0.1.0","0.2.0",$0); print}' {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php > hello-world.tmp && mv hello-world.tmp {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php`
     Then STDERR should be empty
 
     When I run `wp dist-archive wp-content/plugins/hello-world`
@@ -258,3 +382,22 @@ Scenario: Avoids recursive symlink
 
     When I run `wp dist-archive . --plugin-dirname=$(basename "{RUN_DIR}")`
     Then STDERR should be empty
+
+  Scenario: Warns but continues when no distignore file is present
+    Given an empty directory
+    And a test-plugin/test-plugin.php file:
+      """
+      <?php
+      /**
+       * Plugin Name:       Test Plugin
+       * Version:           1.0.0
+       */
+      """
+
+    When I try `wp dist-archive test-plugin`
+    Then STDERR should contain:
+      """
+      No .distignore file found. All files in directory included in archive.
+      """
+    And the test-plugin.1.0.0.zip file should exist
+

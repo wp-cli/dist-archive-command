@@ -57,29 +57,54 @@ class Dist_Archive_Command {
 	 */
 	public function __invoke( $args, $assoc_args ) {
 		list( $path ) = $args;
+		$path         = rtrim( realpath( $path ), '/' );
+		if ( ! is_dir( $path ) ) {
+			WP_CLI::error( 'Provided input path is not a directory.' );
+		}
+
 		if ( isset( $args[1] ) ) {
-			$archive_file = $args[1];
-			$info         = pathinfo( $archive_file );
-			if ( '.' === $info['dirname'] ) {
-				$archive_file = getcwd() . '/' . $info['basename'];
+			// If the end of the string is a filename (file.ext), use it for the output archive filename.
+			if ( 1 === preg_match( '/^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\.[a-zA-Z0-9_-]+$/', basename( $args[1] ) ) ) {
+				$archive_filename = basename( $args[1] );
+
+				// If only the filename was supplied, use the plugin's parent directory for output.
+				if ( basename( $args[1] ) === $args[1] ) {
+					$archive_path = dirname( $path );
+				} else {
+					// Otherwise use the supplied directory.
+					$archive_path = dirname( $args[1] );
+				}
+			} else {
+				$archive_path     = $args[1];
+				$archive_filename = null;
 			}
 		} else {
-			$archive_file = null;
+			if ( 0 !== strpos( $path, '/' ) ) {
+				$archive_path = dirname( getcwd() . '/' . $path );
+			} else {
+				$archive_path = dirname( $path );
+			}
+			$archive_filename = null;
 		}
-		$path = rtrim( realpath( $path ), '/' );
-		if ( ! is_dir( $path ) ) {
-			WP_CLI::error( 'Provided path is not a directory.' );
+
+		// If the  path is not absolute, it is relative.
+		if ( 0 !== strpos( $archive_path, '/' ) ) {
+			$archive_path = rtrim( getcwd() . '/' . ltrim( $archive_path, '/' ), '/' );
 		}
 
 		$dist_ignore_path = $path . '/.distignore';
-		if ( ! file_exists( $dist_ignore_path ) ) {
-			WP_CLI::error( 'No .distignore file found.' );
+		if ( file_exists( $dist_ignore_path ) ) {
+			$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
+		} else {
+			WP_CLI::warning( 'No .distignore file found. All files in directory included in archive.' );
+			$maybe_ignored_files = array();
 		}
 
 		$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
 		$ignored_files       = array();
 		$source_base         = basename( $path );
 		$archive_base        = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
+
 		foreach ( $maybe_ignored_files as $file ) {
 			$file = trim( $file );
 			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
@@ -215,32 +240,24 @@ class Dist_Archive_Command {
 			$source_path = $path;
 		}
 
-		if ( is_null( $archive_file ) ) {
-			$archive_file = dirname( $path ) . '/' . $archive_base . $version;
+		if ( is_null( $archive_filename ) ) {
+			$archive_filename = $archive_base . $version;
 			if ( 'zip' === $assoc_args['format'] ) {
-				$archive_file .= '.zip';
+				$archive_filename .= '.zip';
 			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$archive_file .= '.tar.gz';
+				$archive_filename .= '.tar.gz';
 			}
 		}
+		$archive_filepath = $archive_path . '/' . $archive_filename;
 
 		chdir( dirname( $source_path ) );
 
 		if ( Utils\get_flag_value( $assoc_args, 'create-target-dir' ) ) {
-			$this->maybe_create_directory( $archive_file );
+			$this->maybe_create_directory( $archive_filepath );
 		}
 
-		if ( is_dir( $archive_file ) ) {
-			$archive_file = rtrim( $archive_file, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . $archive_base . $version;
-			if ( 'zip' === $assoc_args['format'] ) {
-				$archive_file .= '.zip';
-			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$archive_file .= '.tar.gz';
-			}
-		}
-
-		if ( ! is_dir( dirname( $archive_file ) ) ) {
-			WP_CLI::error( "Target directory does not exist: {$archive_file}" );
+		if ( ! is_dir( dirname( $archive_path ) ) ) {
+			WP_CLI::error( "Target directory does not exist: {$archive_path}" );
 		}
 
 		if ( 'zip' === $assoc_args['format'] ) {
@@ -248,7 +265,7 @@ class Dist_Archive_Command {
 			if ( ! empty( $excludes ) ) {
 				$excludes = ' --exclude ' . $excludes;
 			}
-			$cmd = "zip -r '{$archive_file}' {$archive_base} {$excludes}";
+			$cmd = "zip -r '{$archive_filepath}' {$archive_base} {$excludes}";
 		} elseif ( 'targz' === $assoc_args['format'] ) {
 			$excludes = array_map(
 				function( $ignored_file ) {
@@ -260,13 +277,13 @@ class Dist_Archive_Command {
 				$ignored_files
 			);
 			$excludes = implode( ' ', $excludes );
-			$cmd      = "tar {$excludes} -zcvf {$archive_file} {$archive_base}";
+			$cmd      = "tar {$excludes} -zcvf {$archive_filepath} {$archive_base}";
 		}
 
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
 		$ret = WP_CLI::launch( escapeshellcmd( $cmd ), false, true );
 		if ( 0 === $ret->return_code ) {
-			$filename = pathinfo( $archive_file, PATHINFO_BASENAME );
+			$filename = pathinfo( $archive_filepath, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
 		} else {
 			$error = $ret->stderr ?: $ret->stdout;
