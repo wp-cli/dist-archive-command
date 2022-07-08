@@ -260,6 +260,57 @@ Feature: Generate a distribution archive of a project
       | zip     | zip       | unzip     | bar            |
       | targz   | tar.gz    | tar -zxvf | bar2           |
 
+
+  Scenario Outline: Correctly ignores hidden files when specified in distignore
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      .*
+      """
+    And a foo/.hidden file:
+      """
+      Ignore
+      """
+    And a foo/test-dir/.hidden file:
+      """
+      Ignore
+      """
+    And a foo/not.hidden file:
+      """
+      Do not ignore
+      """
+    And a foo/test-dir/not.hidden file:
+      """
+      Do not ignore
+      """
+
+    When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
+    Then STDOUT should be:
+      """
+      Success: Created <plugin-dirname>.<extension>
+      """
+    And the <plugin-dirname>.<extension> file should exist
+
+    When I run `rm -rf foo`
+    Then the foo directory should not exist
+
+    When I run `rm -rf <plugin-dirname>`
+    Then the <plugin-dirname> directory should not exist
+
+    When I try `<extract> <plugin-dirname>.<extension>`
+    Then the <plugin-dirname> directory should exist
+    And the <plugin-dirname>/.hidden file should not exist
+    And the <plugin-dirname>/not.hidden file should exist
+    And the <plugin-dirname>/test-dir/hidden file should not exist
+    And the <plugin-dirname>/test-dir/not.hidden file should exist
+
+    Examples:
+      | format  | extension | extract   | plugin-dirname |
+      | zip     | zip       | unzip     | foo            |
+      | targz   | tar.gz    | tar -zxvf | foo            |
+      | zip     | zip       | unzip     | bar3           |
+      | targz   | tar.gz    | tar -zxvf | bar4           |
+
   Scenario: Create directories automatically if requested
     Given a WP install
 
