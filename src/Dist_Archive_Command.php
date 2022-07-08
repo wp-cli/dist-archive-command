@@ -104,13 +104,18 @@ class Dist_Archive_Command {
 		$source_base   = basename( $path );
 		$archive_base  = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
 
+		// When zipping directories, we need to exclude both the contents of and the directory itself from the zip file.
+		foreach ( array_filter( $maybe_ignored_files ) as $file ) {
+			if ( is_dir( $path . '/' . $file ) ) {
+				$maybe_ignored_files[] = rtrim( $file, '/' ) . '/*';
+				$maybe_ignored_files[] = rtrim( $file, '/' ) . '/';
+			}
+		}
+
 		foreach ( $maybe_ignored_files as $file ) {
 			$file = trim( $file );
 			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
 				continue;
-			}
-			if ( is_dir( $path . '/' . $file ) ) {
-				$file = rtrim( $file, '/' ) . '/*';
 			}
 			// If a path is tied to the root of the plugin using `/`, match exactly, otherwise match liberally.
 			if ( 'zip' === $assoc_args['format'] ) {
@@ -248,7 +253,8 @@ class Dist_Archive_Command {
 		}
 
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
-		$ret = WP_CLI::launch( $this->escapeshellcmd( $cmd, array( '^' ) ), false, true );
+		$escaped_shell_command = $this->escapeshellcmd( $cmd, array( '^', '*' ) );
+		$ret = WP_CLI::launch( $escaped_shell_command, false, true );
 		if ( 0 === $ret->return_code ) {
 			$filename = pathinfo( $archive_filepath, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
