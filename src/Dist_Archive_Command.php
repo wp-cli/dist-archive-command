@@ -154,40 +154,7 @@ class Dist_Archive_Command {
 			}
 		}
 
-		/**
-		 * Given the path to a directory, check are any of the directories inside it symlinks.
-		 *
-		 * If the plugin contains a symlink, we will first copy it to a temp directory, potentially omitting any
-		 * symlinks that are excluded via the `.distignore` file, avoiding recursive loops as described in #57.
-		 *
-		 * @param string $path The filepath to the directory to check.
-		 *
-		 * @return bool
-		 */
-		$is_path_contains_symlink = static function ( $path ) {
-
-			if ( ! is_dir( $path ) ) {
-				throw new Exception( 'Path `' . $path . '` is not a directory' );
-			}
-
-			$iterator = new RecursiveIteratorIterator(
-				new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
-				RecursiveIteratorIterator::SELF_FIRST
-			);
-
-			/**
-			 * @var RecursiveIteratorIterator $iterator
-			 * @var SplFileInfo $item
-			 */
-			foreach ( $iterator as $item ) {
-				if ( is_link( $item->getPathname() ) ) {
-					return true;
-				}
-			}
-			return false;
-		};
-
-		if ( $archive_base !== $source_base || $is_path_contains_symlink( $path ) ) {
+		if ( $archive_base !== $source_base || $this->is_path_contains_symlink( $path ) ) {
 			$plugin_dirname = rtrim( $assoc_args['plugin-dirname'], '/' );
 			$archive_base   = $plugin_dirname;
 			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $plugin_dirname . $version . '.' . time();
@@ -254,7 +221,7 @@ class Dist_Archive_Command {
 
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
 		$escaped_shell_command = $this->escapeshellcmd( $cmd, array( '^', '*' ) );
-		$ret = WP_CLI::launch( $escaped_shell_command, false, true );
+		$ret                   = WP_CLI::launch( $escaped_shell_command, false, true );
 		if ( 0 === $ret->return_code ) {
 			$filename = pathinfo( $archive_filepath, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
@@ -374,6 +341,40 @@ class Dist_Archive_Command {
 		}
 
 		return $escaped_command;
+	}
+
+
+	/**
+	 * Given the path to a directory, check are any of the directories inside it symlinks.
+	 *
+	 * If the plugin contains a symlink, we will first copy it to a temp directory, potentially omitting any
+	 * symlinks that are excluded via the `.distignore` file, avoiding recursive loops as described in #57.
+	 *
+	 * @param string $path The filepath to the directory to check.
+	 *
+	 * @return bool
+	 */
+	protected function is_path_contains_symlink( $path ) {
+
+		if ( ! is_dir( $path ) ) {
+			throw new Exception( 'Path `' . $path . '` is not a directory' );
+		}
+
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
+			RecursiveIteratorIterator::SELF_FIRST
+		);
+
+		/**
+		 * @var RecursiveIteratorIterator $iterator
+		 * @var SplFileInfo $item
+		 */
+		foreach ( $iterator as $item ) {
+			if ( is_link( $item->getPathname() ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
