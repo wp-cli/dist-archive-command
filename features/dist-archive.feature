@@ -256,7 +256,6 @@ Feature: Generate a distribution archive of a project
 	Examples:
 	  | format  | extension | extract   | plugin-dirname |
 	  | zip     | zip       | unzip     | foo            |
-	  | targz   | tar.gz    | tar -zxvf | foo            |
 	  | zip     | zip       | unzip     | bar            |
 	  | targz   | tar.gz    | tar -zxvf | bar2           |
 
