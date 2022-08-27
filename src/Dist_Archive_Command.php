@@ -123,9 +123,15 @@ class Dist_Archive_Command {
 					? $archive_base . $file
 					: '*/' . $file;
 			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$ignored_files[] = ( 0 === strpos( $file, '/' ) )
-					? '^' . $archive_base . $file
-					: $file;
+				if ( php_uname( 's' ) === 'Linux' ) {
+					$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+						? $archive_base . $file
+						: '*/' . $file;
+				} else {
+					$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+						? '^' . $archive_base . $file
+						: $file;
+				}
 			}
 		}
 
@@ -211,12 +217,12 @@ class Dist_Archive_Command {
 					if ( '/*' === substr( $ignored_file, -2 ) ) {
 						$ignored_file = substr( $ignored_file, 0, ( strlen( $ignored_file ) - 2 ) );
 					}
-						return "--exclude='{$ignored_file}'";
+					return "--exclude='{$ignored_file}'";
 				},
 				$ignored_files
 			);
 			$excludes = implode( ' ', $excludes );
-			$cmd      = "tar {$excludes} -zcvf {$archive_filepath} {$archive_base}";
+			$cmd      = 'tar ' . ( ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '' ) . "{$excludes} -zcvf {$archive_filepath} {$archive_base}";
 		}
 
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
