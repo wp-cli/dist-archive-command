@@ -256,59 +256,9 @@ Feature: Generate a distribution archive of a project
 	Examples:
 	  | format  | extension | extract   | plugin-dirname |
 	  | zip     | zip       | unzip     | foo            |
+	  | targz   | tar.gz    | tar -zxvf | foo            |
 	  | zip     | zip       | unzip     | bar            |
 	  | targz   | tar.gz    | tar -zxvf | bar2           |
-
-
-  Scenario: Ignores files specified with absolute path and not similarly named files in tar archives
-    Given an empty directory
-    And a foo/.distignore file:
-      """
-      /maybe-ignore-me.txt
-      """
-    And a foo/test.php file:
-      """
-      <?php
-      echo 'Hello world;';
-      """
-    And a foo/test-dir/test.php file:
-      """
-      <?php
-      echo 'Hello world;';
-      """
-    And a foo/maybe-ignore-me.txt file:
-      """
-      Ignore
-      """
-    And a foo/test-dir/maybe-ignore-me.txt file:
-      """
-      Do not ignore
-      """
-    And a foo/test-dir/foo/maybe-ignore-me.txt file:
-      """
-      Do not ignore
-      """
-
-    When I run `wp dist-archive foo --format=targz --plugin-dirname=foo`
-    Then STDOUT should be:
-      """
-      Success: Created foo.tar.gz
-      """
-    And the foo.tar.gz file should exist
-
-    When I run `rm -rf foo`
-    Then the foo directory should not exist
-
-    When I run `rm -rf foo`
-    Then the foo directory should not exist
-
-    When I try `tar -zxvf foo.tar.gz`
-    Then the foo directory should exist
-    And the foo/test.php file should exist
-    And the foo/test-dir/test.php file should exist
-    And the foo/maybe-ignore-me.txt file should not exist
-    And the foo/test-dir/maybe-ignore-me.txt file should exist
-    And the foo/test-dir/foo/maybe-ignore-me.txt file should exist
 
   Scenario Outline: Correctly ignores hidden files when specified in distignore
     Given an empty directory
