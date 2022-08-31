@@ -203,6 +203,113 @@ Feature: Generate a distribution archive of a project
       | zip     | zip       | unzip     |
       | targz   | tar.gz    | tar -zxvf |
 
+  Scenario Outline: Ignores files specified with absolute path and not similarly named files
+	Given an empty directory
+	And a foo/.distignore file:
+      """
+      /maybe-ignore-me.txt
+      """
+	And a foo/test.php file:
+      """
+      <?php
+      echo 'Hello world;';
+      """
+	And a foo/test-dir/test.php file:
+      """
+      <?php
+      echo 'Hello world;';
+      """
+	And a foo/maybe-ignore-me.txt file:
+      """
+      Ignore
+      """
+	And a foo/test-dir/maybe-ignore-me.txt file:
+      """
+      Do not ignore
+      """
+	And a foo/test-dir/foo/maybe-ignore-me.txt file:
+      """
+      Do not ignore
+      """
+
+	When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
+	Then STDOUT should be:
+      """
+      Success: Created <plugin-dirname>.<extension>
+      """
+	And the <plugin-dirname>.<extension> file should exist
+
+	When I run `rm -rf foo`
+	Then the foo directory should not exist
+
+	When I run `rm -rf <plugin-dirname>`
+	Then the <plugin-dirname> directory should not exist
+
+	When I try `<extract> <plugin-dirname>.<extension>`
+	Then the <plugin-dirname> directory should exist
+	And the <plugin-dirname>/test.php file should exist
+	And the <plugin-dirname>/test-dir/test.php file should exist
+	And the <plugin-dirname>/maybe-ignore-me.txt file should not exist
+	And the <plugin-dirname>/test-dir/maybe-ignore-me.txt file should exist
+	And the <plugin-dirname>/test-dir/foo/maybe-ignore-me.txt file should exist
+
+	Examples:
+	  | format  | extension | extract   | plugin-dirname |
+	  | zip     | zip       | unzip     | foo            |
+	  | targz   | tar.gz    | tar -zxvf | foo            |
+	  | zip     | zip       | unzip     | bar            |
+	  | targz   | tar.gz    | tar -zxvf | bar2           |
+
+  Scenario Outline: Correctly ignores hidden files when specified in distignore
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      .*
+      """
+    And a foo/.hidden file:
+      """
+      Ignore
+      """
+    And a foo/test-dir/.hidden file:
+      """
+      Ignore
+      """
+    And a foo/not.hidden file:
+      """
+      Do not ignore
+      """
+    And a foo/test-dir/not.hidden file:
+      """
+      Do not ignore
+      """
+
+    When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
+    Then STDOUT should be:
+      """
+      Success: Created <plugin-dirname>.<extension>
+      """
+    And the <plugin-dirname>.<extension> file should exist
+
+    When I run `rm -rf foo`
+    Then the foo directory should not exist
+
+    When I run `rm -rf <plugin-dirname>`
+    Then the <plugin-dirname> directory should not exist
+
+    When I try `<extract> <plugin-dirname>.<extension>`
+    Then the <plugin-dirname> directory should exist
+    And the <plugin-dirname>/.hidden file should not exist
+    And the <plugin-dirname>/not.hidden file should exist
+    And the <plugin-dirname>/test-dir/hidden file should not exist
+    And the <plugin-dirname>/test-dir/not.hidden file should exist
+
+    Examples:
+      | format  | extension | extract   | plugin-dirname |
+      | zip     | zip       | unzip     | foo            |
+      | targz   | tar.gz    | tar -zxvf | foo            |
+      | zip     | zip       | unzip     | bar3           |
+      | targz   | tar.gz    | tar -zxvf | bar4           |
+
   Scenario: Create directories automatically if requested
     Given a WP install
 
@@ -349,9 +456,43 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/.travis.yml file should not exist
     And the wp-content/plugins/hello-world/bin directory should not exist
 
+Scenario: Avoids recursive symlink
+    Given a WP install in wordpress
+    And a .distignore file:
+      """
+      wp-content
+      wordpress
+      """
+
+    When I run `mkdir -p wp-content/plugins`
+    Then STDERR should be empty
+
+    When I run `rm -rf wordpress/wp-content`
+    Then STDERR should be empty
+
+    When I run `ln -s {RUN_DIR}/wp-content {RUN_DIR}/wordpress/wp-content`
+    Then STDERR should be empty
+
+    When I run `wp scaffold plugin hello-world --path=wordpress`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+
+    When I run `mv wp-content/plugins/hello-world/hello-world.php .`
+    Then STDERR should be empty
+
+    When I run `rm -rf wp-content/plugins/hello-world`
+    Then STDERR should be empty
+
+    When I run `ln -s {RUN_DIR} {RUN_DIR}/wp-content/plugins/hello-world`
+    Then STDERR should be empty
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+
+    When I run `wp dist-archive . --plugin-dirname=$(basename "{RUN_DIR}")`
+    Then STDERR should be empty
+
   Scenario: Warns but continues when no distignore file is present
     Given an empty directory
-    And a test-plugin.php file:
+    And a test-plugin/test-plugin.php file:
       """
       <?php
       /**
@@ -360,9 +501,9 @@ Feature: Generate a distribution archive of a project
        */
       """
 
-    When I try `wp dist-archive . test-plugin.zip`
+    When I try `wp dist-archive test-plugin`
     Then STDERR should contain:
       """
       No .distignore file found. All files in directory included in archive.
       """
-    And the test-plugin.zip file should exist
+    And the test-plugin.1.0.0.zip file should exist
