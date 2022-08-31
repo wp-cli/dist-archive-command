@@ -152,7 +152,7 @@ class Dist_Archive_Command {
 			}
 		}
 
-		if ( false !== stripos( $version, '-alpha' ) && is_dir( $path . '/.git' ) ) {
+		if ( ! empty( $version ) && false !== stripos( $version, '-alpha' ) && is_dir( $path . '/.git' ) ) {
 			$response   = WP_CLI::launch( "cd {$path}; git log --pretty=format:'%h' -n 1", false, true );
 			$maybe_hash = trim( $response->stdout );
 			if ( $maybe_hash && 7 === strlen( $maybe_hash ) ) {
