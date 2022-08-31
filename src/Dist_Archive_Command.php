@@ -101,19 +101,37 @@ class Dist_Archive_Command {
 		}
 
 		$ignored_files = array();
-		$archive_base  = basename( $path );
+		$source_base   = basename( $path );
+		$archive_base  = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
+
+		// When zipping directories, we need to exclude both the contents of and the directory itself from the zip file.
+		foreach ( array_filter( $maybe_ignored_files ) as $file ) {
+			if ( is_dir( $path . '/' . $file ) ) {
+				$maybe_ignored_files[] = rtrim( $file, '/' ) . '/*';
+				$maybe_ignored_files[] = rtrim( $file, '/' ) . '/';
+			}
+		}
+
 		foreach ( $maybe_ignored_files as $file ) {
 			$file = trim( $file );
 			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
 				continue;
 			}
-			if ( is_dir( $path . '/' . $file ) ) {
-				$file = rtrim( $file, '/' ) . '/*';
-			}
+			// If a path is tied to the root of the plugin using `/`, match exactly, otherwise match liberally.
 			if ( 'zip' === $assoc_args['format'] ) {
-				$ignored_files[] = '*/' . $file;
+				$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+					? $archive_base . $file
+					: '*/' . $file;
 			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$ignored_files[] = $file;
+				if ( php_uname( 's' ) === 'Linux' ) {
+					$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+						? $archive_base . $file
+						: '*/' . $file;
+				} else {
+					$ignored_files[] = ( 0 === strpos( $file, '/' ) )
+						? '^' . $archive_base . $file
+						: $file;
+				}
 			}
 		}
 
@@ -134,7 +152,7 @@ class Dist_Archive_Command {
 			}
 		}
 
-		if ( false !== stripos( $version, '-alpha' ) && is_dir( $path . '/.git' ) ) {
+		if ( ! empty( $version ) && false !== stripos( $version, '-alpha' ) && is_dir( $path . '/.git' ) ) {
 			$response   = WP_CLI::launch( "cd {$path}; git log --pretty=format:'%h' -n 1", false, true );
 			$maybe_hash = trim( $response->stdout );
 			if ( $maybe_hash && 7 === strlen( $maybe_hash ) ) {
@@ -142,7 +160,7 @@ class Dist_Archive_Command {
 			}
 		}
 
-		if ( isset( $assoc_args['plugin-dirname'] ) && rtrim( $assoc_args['plugin-dirname'], '/' ) !== $archive_base ) {
+		if ( $archive_base !== $source_base || $this->is_path_contains_symlink( $path ) ) {
 			$plugin_dirname = rtrim( $assoc_args['plugin-dirname'], '/' );
 			$archive_base   = $plugin_dirname;
 			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $plugin_dirname . $version . '.' . time();
@@ -153,6 +171,9 @@ class Dist_Archive_Command {
 				RecursiveIteratorIterator::SELF_FIRST
 			);
 			foreach ( $iterator as $item ) {
+				if ( $this->is_ignored_file( $iterator->getSubPathName(), $maybe_ignored_files ) ) {
+					continue;
+				}
 				if ( $item->isDir() ) {
 					mkdir( $new_path . DIRECTORY_SEPARATOR . $iterator->getSubPathName() );
 				} else {
@@ -196,16 +217,17 @@ class Dist_Archive_Command {
 					if ( '/*' === substr( $ignored_file, -2 ) ) {
 						$ignored_file = substr( $ignored_file, 0, ( strlen( $ignored_file ) - 2 ) );
 					}
-						return "--exclude='{$ignored_file}'";
+					return "--exclude='{$ignored_file}'";
 				},
 				$ignored_files
 			);
 			$excludes = implode( ' ', $excludes );
-			$cmd      = "tar {$excludes} -zcvf {$archive_filepath} {$archive_base}";
+			$cmd      = 'tar ' . ( ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '' ) . "{$excludes} -zcvf {$archive_filepath} {$archive_base}";
 		}
 
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
-		$ret = WP_CLI::launch( escapeshellcmd( $cmd ), false, true );
+		$escaped_shell_command = $this->escapeshellcmd( $cmd, array( '^', '*' ) );
+		$ret                   = WP_CLI::launch( $escaped_shell_command, false, true );
 		if ( 0 === $ret->return_code ) {
 			$filename = pathinfo( $archive_filepath, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
@@ -303,4 +325,100 @@ class Dist_Archive_Command {
 		}
 		return $tags;
 	}
+
+	/**
+	 * Run PHP's escapeshellcmd() then undo escaping known intentional characters.
+	 *
+	 * Escaped by default: &#;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped when not paired.
+	 *
+	 * @see escapeshellcmd()
+	 *
+	 * @param string $cmd The shell command to escape.
+	 * @param string[] $whitelist Array of exceptions to allow in the escaped command.
+	 *
+	 * @return string
+	 */
+	protected function escapeshellcmd( $cmd, $whitelist ) {
+
+		$escaped_command = escapeshellcmd( $cmd );
+
+		foreach ( $whitelist as $undo_escape ) {
+			$escaped_command = str_replace( '\\' . $undo_escape, $undo_escape, $escaped_command );
+		}
+
+		return $escaped_command;
+	}
+
+
+	/**
+	 * Given the path to a directory, check are any of the directories inside it symlinks.
+	 *
+	 * If the plugin contains a symlink, we will first copy it to a temp directory, potentially omitting any
+	 * symlinks that are excluded via the `.distignore` file, avoiding recursive loops as described in #57.
+	 *
+	 * @param string $path The filepath to the directory to check.
+	 *
+	 * @return bool
+	 */
+	protected function is_path_contains_symlink( $path ) {
+
+		if ( ! is_dir( $path ) ) {
+			throw new Exception( 'Path `' . $path . '` is not a directory' );
+		}
+
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
+			RecursiveIteratorIterator::SELF_FIRST
+		);
+
+		/**
+		 * @var RecursiveIteratorIterator $iterator
+		 * @var SplFileInfo $item
+		 */
+		foreach ( $iterator as $item ) {
+			if ( is_link( $item->getPathname() ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check a file from the plugin against the list of rules in the `.distignore` file.
+	 *
+	 * @param string $relative_filepath Path to the file from the plugin root.
+	 * @param string[] $distignore_entries List of ignore rules.
+	 *
+	 * @return bool True when the file matches a rule in the `.distignore` file.
+	 */
+	public function is_ignored_file( $relative_filepath, array $distignore_entries ) {
+
+		foreach ( array_filter( $distignore_entries ) as $entry ) {
+
+			// We don't want to quote `*` in regex pattern, later we'll replace it with `.*`.
+			$pattern = str_replace( '*', '&ast;', $entry );
+
+			$pattern = '/' . preg_quote( $pattern, '/' ) . '/';
+
+			$pattern = str_replace( '&ast;', '.*', $pattern );
+
+			// If the entry is tied to the beginning of the path, add the `^` regex symbol.
+			if ( 0 === strpos( $entry, '/' ) ) {
+				$pattern = '/^' . substr( $pattern, 3 );
+			}
+
+			// If the entry begins with `.` (hidden files), tie it to the beginning of directories.
+			if ( 0 === strpos( $entry, '.' ) ) {
+				$pattern = '/(^|\/)' . substr( $pattern, 1 );
+			}
+
+			if ( 1 === preg_match( $pattern, $relative_filepath ) ) {
+				return true;
+			}
+		}
+
+		return false;
+
+	}
+
 }

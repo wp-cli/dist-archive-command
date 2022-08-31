@@ -48,6 +48,8 @@
 			<property name="prefixes" type="array">
 				<element value="WP_CLI\DistArchive"/><!-- Namespaces. -->
 				<element value="wpcli_dist_archive"/><!-- Global variables and such. -->
+				<element value="WP_CLI_ROOT" />
+				<element value="WP_CLI_VENDOR_DIR" />
 			</property>
 		</properties>
 	</rule>
