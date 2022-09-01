@@ -161,10 +161,8 @@ class Dist_Archive_Command {
 		}
 
 		if ( $archive_base !== $source_base || $this->is_path_contains_symlink( $path ) ) {
-			$plugin_dirname = rtrim( $assoc_args['plugin-dirname'], '/' );
-			$archive_base   = $plugin_dirname;
-			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $plugin_dirname . $version . '.' . time();
-			$new_path       = $tmp_dir . DIRECTORY_SEPARATOR . $plugin_dirname;
+			$tmp_dir        = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $archive_base . $version . '.' . time();
+			$new_path       = $tmp_dir . DIRECTORY_SEPARATOR . $archive_base;
 			mkdir( $new_path, 0777, true );
 			$iterator = new RecursiveIteratorIterator(
 				new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
