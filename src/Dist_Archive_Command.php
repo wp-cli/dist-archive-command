@@ -136,6 +136,14 @@ class Dist_Archive_Command {
 		}
 
 		$version = '';
+
+		/**
+		 * If the path is a theme (meaning it contains a style.css file)
+		 * parse the theme's version from the headers using a regex pattern.
+		 * The pattern used is extracted from the get_file_data() function in core.
+		 *
+		 * @link https://developer.wordpress.org/reference/functions/get_file_data/
+		 */
 		if( file_exists( $path . '/style.css' ) ) {
 			$contents = file_get_contents($path . '/style.css', false, null, 0, 5000);
 			$contents = str_replace( "\r", "\n", $contents );
