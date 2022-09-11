@@ -144,21 +144,21 @@ class Dist_Archive_Command {
 		 *
 		 * @link https://developer.wordpress.org/reference/functions/get_file_data/
 		 */
-		if( file_exists( $path . '/style.css' ) ) {
-			$contents = file_get_contents($path . '/style.css', false, null, 0, 5000);
+		if ( file_exists( $path . '/style.css' ) ) {
+			$contents = file_get_contents( $path . '/style.css', false, null, 0, 5000 );
 			$contents = str_replace( "\r", "\n", $contents );
-			$pattern = '/^' . preg_quote('Version', ',')  . ':(.*)$/mi';
-			if( preg_match( $pattern, $contents, $match ) && $match[1] ) {
+			$pattern  = '/^' . preg_quote( 'Version', ',' ) . ':(.*)$/mi';
+			if ( preg_match( $pattern, $contents, $match ) && $match[1] ) {
 				$version = '.' . trim( preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
 			}
 		}
 
-		if( empty( $version ) ) {
-			foreach (glob($path . '/*.php') as $php_file) {
-				$contents = file_get_contents($php_file, false, null, 0, 5000);
-				$version = $this->get_version_in_code($contents);
-				if (!empty($version)) {
-					$version = '.' . trim($version);
+		if ( empty( $version ) ) {
+			foreach ( glob( $path . '/*.php' ) as $php_file ) {
+				$contents = file_get_contents( $php_file, false, null, 0, 5000 );
+				$version  = $this->get_version_in_code( $contents );
+				if ( ! empty( $version ) ) {
+					$version = '.' . trim( $version );
 					break;
 				}
 			}
