@@ -507,3 +507,23 @@ Scenario: Avoids recursive symlink
       No .distignore file found. All files in directory included in archive.
       """
     And the test-plugin.1.0.0.zip file should exist
+
+  Scenario: Generates a ZIP archive for a theme with the version appended
+	Given a WP install
+
+	When I run `wp scaffold _s new-theme`
+	Then the wp-content/themes/new-theme directory should exist
+
+	# A newly scaffold theme triggers a warning for missing .distignore
+	When I try `wp dist-archive wp-content/themes/new-theme`
+	Then STDOUT should contain:
+      """
+      Success: Created new-theme.1.0.0.zip
+      """
+	And the wp-content/themes/new-theme.1.0.0.zip file should exist
+
+	When I run `wp theme delete new-theme`
+	Then the wp-content/themes/new-theme directory should not exist
+
+	When I run `wp theme install wp-content/themes/new-theme.1.0.0.zip`
+	Then the wp-content/themes/new-theme directory should exist

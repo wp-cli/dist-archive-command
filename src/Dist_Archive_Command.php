@@ -136,12 +136,31 @@ class Dist_Archive_Command {
 		}
 
 		$version = '';
-		foreach ( glob( $path . '/*.php' ) as $php_file ) {
-			$contents = file_get_contents( $php_file, false, null, 0, 5000 );
-			$version  = $this->get_version_in_code( $contents );
-			if ( ! empty( $version ) ) {
-				$version = '.' . trim( $version );
-				break;
+
+		/**
+		 * If the path is a theme (meaning it contains a style.css file)
+		 * parse the theme's version from the headers using a regex pattern.
+		 * The pattern used is extracted from the get_file_data() function in core.
+		 *
+		 * @link https://developer.wordpress.org/reference/functions/get_file_data/
+		 */
+		if ( file_exists( $path . '/style.css' ) ) {
+			$contents = file_get_contents( $path . '/style.css', false, null, 0, 5000 );
+			$contents = str_replace( "\r", "\n", $contents );
+			$pattern  = '/^' . preg_quote( 'Version', ',' ) . ':(.*)$/mi';
+			if ( preg_match( $pattern, $contents, $match ) && $match[1] ) {
+				$version = '.' . trim( preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
+			}
+		}
+
+		if ( empty( $version ) ) {
+			foreach ( glob( $path . '/*.php' ) as $php_file ) {
+				$contents = file_get_contents( $php_file, false, null, 0, 5000 );
+				$version  = $this->get_version_in_code( $contents );
+				if ( ! empty( $version ) ) {
+					$version = '.' . trim( $version );
+					break;
+				}
 			}
 		}
 
