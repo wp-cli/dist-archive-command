@@ -246,6 +246,53 @@ Feature: Generate a distribution archive of a project
 			| zip    | zip       | unzip     |
 			| targz  | tar.gz    | tar -zxvf |
 
+	Scenario Outline: Ignores .git folder
+		Given an empty directory
+		And a foo/.distignore file:
+			"""
+			.git
+			"""
+		And a foo/.git/version.control file:
+			"""
+			history
+			"""
+		And a foo/.git/subfolder/version.control file:
+			"""
+			history
+			"""
+		And a foo/plugin.php file:
+			"""
+			<?php
+			echo 'Hello world';
+			"""
+
+		Then the foo/.git directory should exist
+
+		Then the foo/.git/subfolder/version.control file should exist
+
+		When I run `wp dist-archive foo --format=<format>`
+		Then STDOUT should be:
+			"""
+			Success: Created foo.<extension>
+			"""
+		And the foo.<extension> file should exist
+
+		When I run `rm -rf foo`
+		Then the foo directory should not exist
+
+		When I try `<extract> foo.<extension>`
+		Then the foo directory should exist
+		And the foo/plugin.php file should exist
+		And the foo/.git directory should not exist
+		And the foo/.git/subfolder directory should not exist
+		And the foo/.git/version.control file should not exist
+		And the foo/.git/subfolder/version.control file should not exist
+
+		Examples:
+			| format | extension | extract   |
+			| zip    | zip       | unzip     |
+			| targz  | tar.gz    | tar -zxvf |
+
 	Scenario Outline: Ignores files specified with absolute path and not similarly named files
 		Given an empty directory
 		And a foo/.distignore file:
