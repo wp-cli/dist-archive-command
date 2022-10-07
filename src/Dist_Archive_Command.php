@@ -242,8 +242,9 @@ class Dist_Archive_Command {
 			$cmd      = 'tar ' . ( ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '' ) . "{$excludes} -zcvf {$archive_filepath} {$archive_base}";
 		}
 
+		$escape_whitelist = 'targz' === $assoc_args['format'] ? array( '^', '*' ) : array();
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
-		$escaped_shell_command = $this->escapeshellcmd( $cmd, array( '^', '*' ) );
+		$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
 		$ret                   = WP_CLI::launch( $escaped_shell_command, false, true );
 		if ( 0 === $ret->return_code ) {
 			$filename = pathinfo( $archive_filepath, PATHINFO_BASENAME );
