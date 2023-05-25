@@ -10,7 +10,7 @@ Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contr
 ## Using
 
 ~~~
-wp dist-archive <path> [<target>] [--create-target-dir] [--plugin-dirname=<plugin-slug>] [--format=<format>]
+wp dist-archive <path> [<target>] [--create-target-dir] [--plugin-dirname=<plugin-slug>] [--format=<format>] [--filename-format=<filename-format>]
 ~~~
 
 For a plugin in a directory 'wp-content/plugins/hello-world', this command
@@ -37,8 +37,9 @@ script in each project.
 		Path to the project that includes a .distignore file.
 
 	[<target>]
-		Path and optional file name for the distribution archive. If only a path is provided the file name defaults to project directory name plus version, if discoverable.
-        If only a path if given it has to exists to function correctly.
+		Path and optional file name for the distribution archive.
+		If only a path is provided, the file name defaults to the project directory name plus the version, if discoverable.
+		Also, if only a path is given, the directory that it points to has to already exist for the command to function correctly.
 
 	[--create-target-dir]
 		Automatically create the target directory as needed.
@@ -54,6 +55,10 @@ script in each project.
 		  - zip
 		  - targz
 		---
+
+	[--filename-format=<filename-format>]
+		Use a custom format for archive filename. Defaults to '{name}.{version}'.
+		This is ignored if a custom filename is provided or version does not exist.
 
 ## Installing
 

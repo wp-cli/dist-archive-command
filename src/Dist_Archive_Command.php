@@ -53,6 +53,10 @@ class Dist_Archive_Command {
 	 *   - targz
 	 * ---
 	 *
+	 * [--filename-format=<filename-format>]
+	 * : Use a custom format for archive filename. Defaults to '{name}.{version}'.
+	 * This is ignored if a custom filename is provided or version does not exist.
+	 *
 	 * @when before_wp_load
 	 */
 	public function __invoke( $args, $assoc_args ) {
@@ -149,7 +153,7 @@ class Dist_Archive_Command {
 			$contents = str_replace( "\r", "\n", $contents );
 			$pattern  = '/^' . preg_quote( 'Version', ',' ) . ':(.*)$/mi';
 			if ( preg_match( $pattern, $contents, $match ) && $match[1] ) {
-				$version = '.' . trim( preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
+				$version = trim( preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
 			}
 		}
 
@@ -158,7 +162,7 @@ class Dist_Archive_Command {
 				$contents = file_get_contents( $php_file, false, null, 0, 5000 );
 				$version  = $this->get_version_in_code( $contents );
 				if ( ! empty( $version ) ) {
-					$version = '.' . trim( $version );
+					$version = trim( $version );
 					break;
 				}
 			}
@@ -167,7 +171,7 @@ class Dist_Archive_Command {
 		if ( empty( $version ) && file_exists( $path . '/composer.json' ) ) {
 			$composer_obj = json_decode( file_get_contents( $path . '/composer.json' ) );
 			if ( ! empty( $composer_obj->version ) ) {
-				$version = '.' . trim( $composer_obj->version );
+				$version = trim( $composer_obj->version );
 			}
 		}
 
@@ -180,7 +184,7 @@ class Dist_Archive_Command {
 		}
 
 		if ( $archive_base !== $source_base || $this->is_path_contains_symlink( $path ) ) {
-			$tmp_dir  = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $archive_base . $version . '.' . time();
+			$tmp_dir  = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $archive_base . '.' . $version . '.' . time();
 			$new_path = $tmp_dir . DIRECTORY_SEPARATOR . $archive_base;
 			mkdir( $new_path, 0777, true );
 			$iterator = new RecursiveIteratorIterator(
@@ -203,7 +207,17 @@ class Dist_Archive_Command {
 		}
 
 		if ( is_null( $archive_filename ) ) {
-			$archive_filename = $archive_base . $version;
+
+			if ( ! empty( $version ) ) {
+				if ( ! empty( $assoc_args['filename-format'] ) ) {
+					$archive_filename = str_replace( [ '{name}', '{version}' ], [ $archive_base, $version ], $assoc_args['filename-format'] );
+				} else {
+					$archive_filename = $archive_base . '.' . $version;
+				}
+			} else {
+				$archive_filename = $archive_base;
+			}
+
 			if ( 'zip' === $assoc_args['format'] ) {
 				$archive_filename .= '.zip';
 			} elseif ( 'targz' === $assoc_args['format'] ) {
