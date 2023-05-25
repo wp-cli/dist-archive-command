@@ -617,3 +617,58 @@ Feature: Generate a distribution archive of a project
 
 		When I run `wp theme install wp-content/themes/new-theme.1.0.0.zip`
 		Then the wp-content/themes/new-theme directory should exist
+
+	Scenario: Generates a ZIP archive with a custom filename format
+		Given a WP install
+
+		When I run `wp scaffold plugin hello-world`
+		Then the wp-content/plugins/hello-world directory should exist
+		And the wp-content/plugins/hello-world/hello-world.php file should exist
+		And the wp-content/plugins/hello-world/.travis.yml file should exist
+		And the wp-content/plugins/hello-world/bin directory should exist
+
+		When I run `wp dist-archive wp-content/plugins/hello-world --filename-format={name}-{version}`
+		Then STDOUT should be:
+			"""
+			Success: Created hello-world-0.1.0.zip
+			"""
+		And STDERR should be empty
+		And the wp-content/plugins/hello-world-0.1.0.zip file should exist
+
+	Scenario: Ignores filename format when custom name is provided
+		Given a WP install
+
+		When I run `wp scaffold plugin hello-world`
+		Then the wp-content/plugins/hello-world directory should exist
+		And the wp-content/plugins/hello-world/hello-world.php file should exist
+		And the wp-content/plugins/hello-world/.travis.yml file should exist
+		And the wp-content/plugins/hello-world/bin directory should exist
+
+		When I run `wp dist-archive wp-content/plugins/hello-world hello-world.zip --filename-format={name}-{version}`
+		Then STDOUT should be:
+			"""
+			Success: Created hello-world.zip
+			"""
+		And STDERR should be empty
+		And the wp-content/plugins/hello-world.zip file should exist
+		And the wp-content/plugins/hello-world-0.1.0.zip file should not exist
+
+	Scenario: Ignores filename format when version does not exist
+		Given an empty directory
+		And a foo/.distignore file:
+			"""
+			/maybe-ignore-me.txt
+			"""
+		And a foo/test.php file:
+			"""
+			<?php
+			echo 'Hello world;';
+			"""
+
+		When I run `wp dist-archive foo --filename-format={name}-{version}`
+		Then STDOUT should be:
+			"""
+			Success: Created foo.zip
+			"""
+		And STDERR should be empty
+		And the foo.zip file should exist
