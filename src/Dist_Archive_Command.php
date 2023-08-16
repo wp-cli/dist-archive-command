@@ -430,7 +430,7 @@ class Dist_Archive_Command {
 			// We don't want to quote `*` in regex pattern, later we'll replace it with `.*`.
 			$pattern = str_replace( '*', '&ast;', $entry );
 
-			$pattern = '/' . preg_quote( $pattern, '/' ) . '/';
+			$pattern = '/' . preg_quote( $pattern, '/' ) . '$/';
 
 			$pattern = str_replace( '&ast;', '.*', $pattern );
 
