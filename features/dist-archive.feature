@@ -672,3 +672,49 @@ Feature: Generate a distribution archive of a project
       """
     And STDERR should be empty
     And the foo.zip file should exist
+
+  Scenario Outline: Ignores files with exact match and not similarly named files
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      ignore-me.js
+      """
+    And a foo/test.php file:
+      """
+      <?php
+      echo 'Hello world;';
+      """
+    And a foo/ignore-me.json file:
+      """
+      Do not ignore
+      """
+    And a foo/ignore-me.js file:
+      """
+      Ignore
+      """
+
+    When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
+    Then STDOUT should be:
+      """
+      Success: Created <plugin-dirname>.<extension>
+      """
+    And the <plugin-dirname>.<extension> file should exist
+
+    When I run `rm -rf foo`
+    Then the foo directory should not exist
+
+    When I run `rm -rf <plugin-dirname>`
+    Then the <plugin-dirname> directory should not exist
+
+    When I try `<extract> <plugin-dirname>.<extension>`
+    Then the <plugin-dirname> directory should exist
+    And the <plugin-dirname>/test.php file should exist
+    And the <plugin-dirname>/ignore-me.json file should exist
+    And the <plugin-dirname>/ignore-me.js file should not exist
+
+    Examples:
+      | format | extension | extract   | plugin-dirname |
+      | zip    | zip       | unzip     | foo            |
+      | targz  | tar.gz    | tar -zxvf | foo            |
+      | zip    | zip       | unzip     | bar            |
+      | targz  | tar.gz    | tar -zxvf | bar2           |
