@@ -96,12 +96,12 @@ class Dist_Archive_Command {
 			$archive_path = rtrim( getcwd() . '/' . ltrim( $archive_path, '/' ), '/' );
 		}
 
-		$dist_ignore_path = $path . '/.distignore';
-		if ( file_exists( $dist_ignore_path ) ) {
-			$maybe_ignored_files = explode( PHP_EOL, file_get_contents( $dist_ignore_path ) );
+		$dist_ignore_filepath = $path . '/.distignore';
+		if ( file_exists( $dist_ignore_filepath ) ) {
+			$file_ignore_rules = explode( PHP_EOL, file_get_contents( $dist_ignore_filepath ) );
 		} else {
 			WP_CLI::warning( 'No .distignore file found. All files in directory included in archive.' );
-			$maybe_ignored_files = array();
+			$file_ignore_rules = array();
 		}
 
 		$ignored_files = array();
@@ -109,14 +109,14 @@ class Dist_Archive_Command {
 		$archive_base  = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
 
 		// When zipping directories, we need to exclude both the contents of and the directory itself from the zip file.
-		foreach ( array_filter( $maybe_ignored_files ) as $file ) {
-			if ( is_dir( $path . '/' . $file ) ) {
-				$maybe_ignored_files[] = rtrim( $file, '/' ) . '/*';
-				$maybe_ignored_files[] = rtrim( $file, '/' ) . '/';
+		foreach ( array_filter( $file_ignore_rules ) as $file_ignore_rule ) {
+			if ( is_dir( $path . '/' . $file_ignore_rule ) ) {
+				$file_ignore_rules[] = rtrim( $file_ignore_rule, '/' ) . '/*';
+				$file_ignore_rules[] = rtrim( $file_ignore_rule, '/' ) . '/';
 			}
 		}
 
-		foreach ( $maybe_ignored_files as $file ) {
+		foreach ( $file_ignore_rules as $file ) {
 			$file = trim( $file );
 			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
 				continue;
@@ -192,7 +192,7 @@ class Dist_Archive_Command {
 				RecursiveIteratorIterator::SELF_FIRST
 			);
 			foreach ( $iterator as $item ) {
-				if ( $this->is_ignored_file( $iterator->getSubPathName(), $maybe_ignored_files ) ) {
+				if ( $this->is_ignored_file( $iterator->getSubPathName(), $file_ignore_rules ) ) {
 					continue;
 				}
 				if ( $item->isDir() ) {
@@ -236,24 +236,38 @@ class Dist_Archive_Command {
 			WP_CLI::error( "Target directory does not exist: {$archive_path}" );
 		}
 
-		if ( 'zip' === $assoc_args['format'] ) {
-			$excludes = implode( ' --exclude ', $ignored_files );
-			if ( ! empty( $excludes ) ) {
-				$excludes = ' --exclude ' . $excludes;
+		// If the files are being zipped in place, we need the exclusion rules.
+		// whereas if they were copied for any reasons above, the rules have already been applied.
+		if ( $source_path !== $path || empty( $file_ignore_rules ) ) {
+			if ( 'zip' === $assoc_args['format'] ) {
+				$cmd = "zip -r '{$archive_filepath}' {$archive_base}";
+			} elseif ( 'targz' === $assoc_args['format'] ) {
+				$cmd = "tar -zcvf {$archive_filepath} {$archive_base}";
 			}
-			$cmd = "zip -r '{$archive_filepath}' {$archive_base} {$excludes}";
-		} elseif ( 'targz' === $assoc_args['format'] ) {
-			$excludes = array_map(
-				function( $ignored_file ) {
-					if ( '/*' === substr( $ignored_file, -2 ) ) {
-						$ignored_file = substr( $ignored_file, 0, ( strlen( $ignored_file ) - 2 ) );
-					}
-					return "--exclude='{$ignored_file}'";
-				},
-				$ignored_files
-			);
-			$excludes = implode( ' ', $excludes );
-			$cmd      = 'tar ' . ( ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '' ) . "{$excludes} -zcvf {$archive_filepath} {$archive_base}";
+		} else {
+			$tmp_dir = sys_get_temp_dir() . uniqid( $archive_base . '.' . $version );
+			mkdir( $tmp_dir, 0777, true );
+			if ( 'zip' === $assoc_args['format'] ) {
+				$include_list_filepath = $tmp_dir . '/include-file-list.txt';
+				file_put_contents(
+					$include_list_filepath,
+					trim( implode( "\n", $this->get_file_list( $source_path, $file_ignore_rules ) ) )
+				);
+				$cmd = "zip -r '{$archive_filepath}' {$archive_base} -i@{$include_list_filepath}";
+			} elseif ( 'targz' === $assoc_args['format'] ) {
+				$exclude_list_filepath = $tmp_dir . '/exclude-file-list.txt';
+				$excludes              = array_map(
+					function( $ignored_file ) {
+						return '^' . preg_quote( $ignored_file, '\\' ) . '$';
+					},
+					$this->get_file_list( $source_path, $file_ignore_rules, true )
+				);
+				file_put_contents(
+					$exclude_list_filepath,
+					trim( implode( "\n", $excludes ) )
+				);
+				$cmd = "tar --exclude-from={$exclude_list_filepath} -zcvf {$archive_filepath} {$archive_base}";
+			}
 		}
 
 		$escape_whitelist = 'targz' === $assoc_args['format'] ? array( '^', '*' ) : array();
@@ -419,13 +433,13 @@ class Dist_Archive_Command {
 	 * Check a file from the plugin against the list of rules in the `.distignore` file.
 	 *
 	 * @param string $relative_filepath Path to the file from the plugin root.
-	 * @param string[] $distignore_entries List of ignore rules.
+	 * @param string[] $file_exclusion_rules List of ignore rules.
 	 *
 	 * @return bool True when the file matches a rule in the `.distignore` file.
 	 */
-	public function is_ignored_file( $relative_filepath, array $distignore_entries ) {
+	public function is_ignored_file( $relative_filepath, array $file_exclusion_rules ) {
 
-		foreach ( array_filter( $distignore_entries ) as $entry ) {
+		foreach ( array_filter( $file_exclusion_rules ) as $entry ) {
 
 			// We don't want to quote `*` in regex pattern, later we'll replace it with `.*`.
 			$pattern = str_replace( '*', '&ast;', $entry );
@@ -450,7 +464,43 @@ class Dist_Archive_Command {
 		}
 
 		return false;
-
 	}
 
+	/**
+	 * Filter all files in a path to list of file to include or to exclude from the archive.
+	 *
+	 * @param string $dir Path to process
+	 * @param string[] $file_exclusion_rules The distignore rules
+	 * @param bool $excluded Return the list of files to exclude. Default (false) returns the list of files to include.
+	 * @return string[]
+	 */
+	private function get_file_list( $path, $file_exclusion_rules, $excluded = false ) {
+
+		$included_files = array();
+		$excluded_files = array();
+
+		if ( ! is_dir( $path ) ) {
+			throw new Exception( 'Path `' . $path . '` is not a directory' );
+		}
+
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
+			RecursiveIteratorIterator::SELF_FIRST
+		);
+
+		/**
+		 * @var RecursiveIteratorIterator $iterator
+		 * @var SplFileInfo $item
+		 */
+		foreach ( $iterator as $item ) {
+			$relative_filepath = str_replace( $path . '/', '', $item->getPathname() );
+			if ( $this->is_ignored_file( $relative_filepath, $file_exclusion_rules ) ) {
+				$excluded_files[] = basename( $path ) . '/' . $relative_filepath;
+			} else {
+				$included_files[] = basename( $path ) . '/' . $relative_filepath;
+			}
+		}
+
+		return $excluded ? $excluded_files : $included_files;
+	}
 }

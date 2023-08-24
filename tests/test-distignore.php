@@ -11,19 +11,21 @@ class DistignoreTest extends TestCase {
 	 * @dataProvider distignoreSampleData
 	 * @covers ::is_ignored_file
 	 */
-	public function testIgnoreFilesFunction( $filepath, $distignore_entries, $expected ) {
+	public function testIgnoreFilesFunction( $filepath, $distignore_entries, $expected_should_be_ignored ) {
 
 		$sut = new Dist_Archive_Command();
 
 		$result = $sut->is_ignored_file( $filepath, $distignore_entries );
 
-		$this->assertEquals( $expected, $result );
+		//      $this->assertEquals( $expected_should_be_ignored, $result, "$filepath should " . $expected_should_be_ignored ? '' : 'not ' . 'be ignored' );
+		$this->assertEquals( $expected_should_be_ignored, $result, "$filepath " );
+		//      $this->assertEquals( $expected_should_be_ignored, $result, "faaaaailed" );
 	}
 
 	/**
 	 * Example .distignore entries and files.
 	 *
-	 * Array of arrays containing [example filepath, distignore array, expected result].
+	 * Array of arrays containing [example filepath, distignore array, expected: is the file ignored].
 	 *
 	 * @return array<array<string,array<string>,bool>>
 	 */
@@ -100,6 +102,21 @@ class DistignoreTest extends TestCase {
 			array(
 				'subdir/maybe.txt',
 				array( '/maybe.txt' ),
+				false,
+			),
+			array(
+				'foo/test.php',
+				array( 'ignore-me.js' ),
+				false,
+			),
+			array(
+				'maybe-ignore-me.txt',
+				array( '/maybe-ignore-me.txt' ),
+				true,
+			),
+			array(
+				'test-dir/maybe-ignore-me.txt',
+				array( '/maybe-ignore-me.txt' ),
 				false,
 			),
 		);
