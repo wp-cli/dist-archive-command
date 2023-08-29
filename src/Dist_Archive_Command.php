@@ -114,37 +114,6 @@ class Dist_Archive_Command {
 		$source_base   = basename( $path );
 		$archive_base  = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
 
-		// When zipping directories, we need to exclude both the contents of and the directory itself from the zip file.
-		foreach ( array_filter( $file_ignore_rules ) as $file_ignore_rule ) {
-			if ( is_dir( $path . '/' . $file_ignore_rule ) ) {
-				$file_ignore_rules[] = rtrim( $file_ignore_rule, '/' ) . '/*';
-				$file_ignore_rules[] = rtrim( $file_ignore_rule, '/' ) . '/';
-			}
-		}
-
-		foreach ( $file_ignore_rules as $file ) {
-			$file = trim( $file );
-			if ( 0 === strpos( $file, '#' ) || empty( $file ) ) {
-				continue;
-			}
-			// If a path is tied to the root of the plugin using `/`, match exactly, otherwise match liberally.
-			if ( 'zip' === $assoc_args['format'] ) {
-				$ignored_files[] = ( 0 === strpos( $file, '/' ) )
-					? $archive_base . $file
-					: '*/' . $file;
-			} elseif ( 'targz' === $assoc_args['format'] ) {
-				if ( php_uname( 's' ) === 'Linux' ) {
-					$ignored_files[] = ( 0 === strpos( $file, '/' ) )
-						? $archive_base . $file
-						: '*/' . $file;
-				} else {
-					$ignored_files[] = ( 0 === strpos( $file, '/' ) )
-						? '^' . $archive_base . $file
-						: $file;
-				}
-			}
-		}
-
 		$version = '';
 
 		/**
