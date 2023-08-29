@@ -6,6 +6,10 @@ use WP_CLI\Utils;
  * Create a distribution archive based on a project's .distignore file.
  */
 class Dist_Archive_Command {
+	/**
+	 * @var \Inmarelibero\GitIgnoreChecker\GitIgnoreChecker
+	 */
+	private $checker;
 
 	/**
 	 * Create a distribution archive based on a project's .distignore file.
@@ -65,6 +69,8 @@ class Dist_Archive_Command {
 		if ( ! is_dir( $path ) ) {
 			WP_CLI::error( 'Provided input path is not a directory.' );
 		}
+
+		$this->checker = new \Inmarelibero\GitIgnoreChecker\GitIgnoreChecker( $path, '.distignore' );
 
 		if ( isset( $args[1] ) ) {
 			// If the end of the string is a filename (file.ext), use it for the output archive filename.
@@ -184,21 +190,15 @@ class Dist_Archive_Command {
 		}
 
 		if ( $archive_base !== $source_base || $this->is_path_contains_symlink( $path ) ) {
-			$tmp_dir  = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $archive_base . '.' . $version . '.' . time();
+			$tmp_dir  = sys_get_temp_dir() . uniqid( $archive_base . '.' . $version );
 			$new_path = $tmp_dir . DIRECTORY_SEPARATOR . $archive_base;
 			mkdir( $new_path, 0777, true );
-			$iterator = new RecursiveIteratorIterator(
-				new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
-				RecursiveIteratorIterator::SELF_FIRST
-			);
-			foreach ( $iterator as $item ) {
-				if ( $this->is_ignored_file( $iterator->getSubPathName(), $file_ignore_rules ) ) {
-					continue;
-				}
-				if ( $item->isDir() ) {
-					mkdir( $new_path . DIRECTORY_SEPARATOR . $iterator->getSubPathName() );
+			foreach ( $this->get_file_list( $path ) as $relative_filepath ) {
+				$source_item = $path . $relative_filepath;
+				if ( is_dir( $source_item ) ) {
+					mkdir( $new_path . '/' . $relative_filepath, 0777, true );
 				} else {
-					copy( $item, $new_path . DIRECTORY_SEPARATOR . $iterator->getSubPathName() );
+					copy( $source_item, $new_path . $relative_filepath );
 				}
 			}
 			$source_path = $new_path;
@@ -251,16 +251,28 @@ class Dist_Archive_Command {
 				$include_list_filepath = $tmp_dir . '/include-file-list.txt';
 				file_put_contents(
 					$include_list_filepath,
-					trim( implode( "\n", $this->get_file_list( $source_path, $file_ignore_rules ) ) )
+					trim(
+						implode(
+							"\n",
+							array_map(
+								function( $relative_path ) use ( $source_path ) {
+									return basename( $source_path ) . $relative_path;
+								},
+								$this->get_file_list( $source_path )
+							)
+						)
+					)
 				);
 				$cmd = "zip -r '{$archive_filepath}' {$archive_base} -i@{$include_list_filepath}";
 			} elseif ( 'targz' === $assoc_args['format'] ) {
 				$exclude_list_filepath = $tmp_dir . '/exclude-file-list.txt';
-				$excludes              = array_map(
-					function( $ignored_file ) {
-						return '^' . preg_quote( $ignored_file, '\\' ) . '$';
-					},
-					$this->get_file_list( $source_path, $file_ignore_rules, true )
+				$excludes              = array_filter(
+					array_map(
+						function( $ignored_file ) use ( $source_path ) {
+							return '^' . preg_quote( basename( $source_path ) . $ignored_file, '\\' ) . '$';
+						},
+						$this->get_file_list( $source_path, true )
+					)
 				);
 				file_put_contents(
 					$exclude_list_filepath,
@@ -430,51 +442,16 @@ class Dist_Archive_Command {
 	}
 
 	/**
-	 * Check a file from the plugin against the list of rules in the `.distignore` file.
-	 *
-	 * @param string $relative_filepath Path to the file from the plugin root.
-	 * @param string[] $file_exclusion_rules List of ignore rules.
-	 *
-	 * @return bool True when the file matches a rule in the `.distignore` file.
-	 */
-	public function is_ignored_file( $relative_filepath, array $file_exclusion_rules ) {
-
-		foreach ( array_filter( $file_exclusion_rules ) as $entry ) {
-
-			// We don't want to quote `*` in regex pattern, later we'll replace it with `.*`.
-			$pattern = str_replace( '*', '&ast;', $entry );
-
-			$pattern = '/' . preg_quote( $pattern, '/' ) . '$/';
-
-			$pattern = str_replace( '&ast;', '.*', $pattern );
-
-			// If the entry is tied to the beginning of the path, add the `^` regex symbol.
-			if ( 0 === strpos( $entry, '/' ) ) {
-				$pattern = '/^' . substr( $pattern, 3 );
-			}
-
-			// If the entry begins with `.` (hidden files), tie it to the beginning of directories.
-			if ( 0 === strpos( $entry, '.' ) ) {
-				$pattern = '/(^|\/)' . substr( $pattern, 1 );
-			}
-
-			if ( 1 === preg_match( $pattern, $relative_filepath ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
 	 * Filter all files in a path to list of file to include or to exclude from the archive.
+	 *
+	 * Exclude list should contain directory names when no files in that directory exist in the include list.
 	 *
 	 * @param string $dir Path to process
 	 * @param string[] $file_exclusion_rules The distignore rules
 	 * @param bool $excluded Return the list of files to exclude. Default (false) returns the list of files to include.
 	 * @return string[]
 	 */
-	private function get_file_list( $path, $file_exclusion_rules, $excluded = false ) {
+	private function get_file_list( $path, $excluded = false ) {
 
 		$included_files = array();
 		$excluded_files = array();
@@ -493,11 +470,23 @@ class Dist_Archive_Command {
 		 * @var SplFileInfo $item
 		 */
 		foreach ( $iterator as $item ) {
-			$relative_filepath = str_replace( $path . '/', '', $item->getPathname() );
-			if ( $this->is_ignored_file( $relative_filepath, $file_exclusion_rules ) ) {
-				$excluded_files[] = basename( $path ) . '/' . $relative_filepath;
+			$relative_filepath = str_replace( $path, '', $item->getPathname() );
+			if ( $this->checker->isPathIgnored( $relative_filepath ) ) {
+				$excluded_files[] = $relative_filepath;
 			} else {
-				$included_files[] = basename( $path ) . '/' . $relative_filepath;
+				$included_files[] = $relative_filepath;
+			}
+		}
+
+		// Check all excluded directories and remove the from the excluded list if they contain included files.
+		foreach ( $excluded_files as $excluded_file_index => $excluded_relative_path ) {
+			if ( ! is_dir( $path . $excluded_relative_path ) ) {
+				continue;
+			}
+			foreach ( $included_files as $included_relative_path ) {
+				if ( 0 === strpos( $included_relative_path, $excluded_relative_path ) ) {
+					unset( $excluded_files[ $excluded_file_index ] );
+				}
 			}
 		}
 
