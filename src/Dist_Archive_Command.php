@@ -192,12 +192,12 @@ class Dist_Archive_Command {
 				$archive_filename .= '.tar.gz';
 			}
 		}
-		$archive_filepath = $archive_path . '/' . $archive_filename;
+		$archive_absolute_filepath = $archive_path . '/' . $archive_filename;
 
 		chdir( dirname( $source_path ) );
 
 		if ( Utils\get_flag_value( $assoc_args, 'create-target-dir' ) ) {
-			$this->maybe_create_directory( $archive_filepath );
+			$this->maybe_create_directory( $archive_absolute_filepath );
 		}
 
 		if ( ! is_dir( dirname( $archive_path ) ) ) {
@@ -208,9 +208,9 @@ class Dist_Archive_Command {
 		// whereas if they were copied for any reasons above, the rules have already been applied.
 		if ( $source_path !== $path || empty( $file_ignore_rules ) ) {
 			if ( 'zip' === $assoc_args['format'] ) {
-				$cmd = "zip -r '{$archive_filepath}' {$archive_base}";
+				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_base}";
 			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$cmd = "tar -zcvf {$archive_filepath} {$archive_base}";
+				$cmd = "tar -zcvf {$archive_absolute_filepath} {$archive_base}";
 			}
 		} else {
 			$tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid( $archive_base . '.' . $version );
@@ -231,13 +231,17 @@ class Dist_Archive_Command {
 						)
 					)
 				);
-				$cmd = "zip -r '{$archive_filepath}' {$archive_base} -i@{$include_list_filepath}";
+				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_base} -i@{$include_list_filepath}";
 			} elseif ( 'targz' === $assoc_args['format'] ) {
 				$exclude_list_filepath = $tmp_dir . '/exclude-file-list.txt';
 				$excludes              = array_filter(
 					array_map(
 						function( $ignored_file ) use ( $source_path ) {
-							return '^' . preg_quote( basename( $source_path ) . $ignored_file, '\\' ) . '$';
+							if ( php_uname( 's' ) === 'Linux' ) {
+								return '^' . preg_quote( $source_path . $ignored_file, '\\' ) . '$';
+							} else {
+								return '^' . preg_quote( basename( $source_path ) . $ignored_file, '\\' ) . '$';
+							}
 						},
 						$this->get_file_list( $source_path, true )
 					)
@@ -246,8 +250,7 @@ class Dist_Archive_Command {
 					$exclude_list_filepath,
 					trim( implode( "\n", $excludes ) )
 				);
-				$linux = php_uname( 's' ) === 'Linux' ? '--anchored ' : '';
-				$cmd   = "tar {$linux} --exclude-from={$exclude_list_filepath} -zcvf {$archive_filepath} {$archive_base}";
+				$cmd = "tar --exclude-from={$exclude_list_filepath} -zcvf {$archive_absolute_filepath} {$archive_base}";
 			}
 		}
 
@@ -256,7 +259,7 @@ class Dist_Archive_Command {
 		$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
 		$ret                   = WP_CLI::launch( $escaped_shell_command, false, true );
 		if ( 0 === $ret->return_code ) {
-			$filename = pathinfo( $archive_filepath, PATHINFO_BASENAME );
+			$filename = pathinfo( $archive_absolute_filepath, PATHINFO_BASENAME );
 			WP_CLI::success( "Created {$filename}" );
 		} else {
 			$error = $ret->stderr ?: $ret->stdout;
