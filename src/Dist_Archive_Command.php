@@ -158,7 +158,7 @@ class Dist_Archive_Command {
 		}
 
 		if ( $archive_base !== $source_base || $this->is_path_contains_symlink( $path ) ) {
-			$tmp_dir  = sys_get_temp_dir() . uniqid( $archive_base . '.' . $version );
+			$tmp_dir  = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid( $archive_base . '.' . $version );
 			$new_path = $tmp_dir . DIRECTORY_SEPARATOR . $archive_base;
 			mkdir( $new_path, 0777, true );
 			foreach ( $this->get_file_list( $path ) as $relative_filepath ) {
@@ -213,7 +213,7 @@ class Dist_Archive_Command {
 				$cmd = "tar -zcvf {$archive_filepath} {$archive_base}";
 			}
 		} else {
-			$tmp_dir = sys_get_temp_dir() . uniqid( $archive_base . '.' . $version );
+			$tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid( $archive_base . '.' . $version );
 			mkdir( $tmp_dir, 0777, true );
 			if ( 'zip' === $assoc_args['format'] ) {
 				$include_list_filepath = $tmp_dir . '/include-file-list.txt';
