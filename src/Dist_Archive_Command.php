@@ -110,9 +110,8 @@ class Dist_Archive_Command {
 			$file_ignore_rules = array();
 		}
 
-		$ignored_files = array();
-		$source_base   = basename( $path );
-		$archive_base  = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
+		$source_base  = basename( $path );
+		$archive_base = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
 
 		$version = '';
 
@@ -415,8 +414,7 @@ class Dist_Archive_Command {
 	 *
 	 * Exclude list should contain directory names when no files in that directory exist in the include list.
 	 *
-	 * @param string $dir Path to process
-	 * @param string[] $file_exclusion_rules The distignore rules
+	 * @param string $path Path to process
 	 * @param bool $excluded Return the list of files to exclude. Default (false) returns the list of files to include.
 	 * @return string[]
 	 */
