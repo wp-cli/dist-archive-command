@@ -246,7 +246,8 @@ class Dist_Archive_Command {
 					$exclude_list_filepath,
 					trim( implode( "\n", $excludes ) )
 				);
-				$cmd = "tar --exclude-from={$exclude_list_filepath} -zcvf {$archive_filepath} {$archive_base}";
+				$linux = php_uname( 's' ) === 'Linux' ? '--anchored ' : '';
+				$cmd   = "tar {$linux} --exclude-from={$exclude_list_filepath} -zcvf {$archive_filepath} {$archive_base}";
 			}
 		}
 
