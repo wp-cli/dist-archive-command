@@ -244,7 +244,7 @@ class Dist_Archive_Command {
 			$cmd = "zip -r '{$archive_filepath}' {$archive_base} {$excludes}";
 		} elseif ( 'targz' === $assoc_args['format'] ) {
 			$excludes = array_map(
-				function( $ignored_file ) {
+				function ( $ignored_file ) {
 					if ( '/*' === substr( $ignored_file, -2 ) ) {
 						$ignored_file = substr( $ignored_file, 0, ( strlen( $ignored_file ) - 2 ) );
 					}
@@ -450,7 +450,5 @@ class Dist_Archive_Command {
 		}
 
 		return false;
-
 	}
-
 }

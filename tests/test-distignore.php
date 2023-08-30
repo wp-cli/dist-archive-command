@@ -103,7 +103,5 @@ class DistignoreTest extends TestCase {
 				false,
 			),
 		);
-
 	}
-
 }
