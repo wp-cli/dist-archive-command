@@ -14,21 +14,14 @@
     "require": {
         "php": ">=5.6",
         "wp-cli/wp-cli": "^2",
-        "inmarelibero/gitignore-checker": "^1.0"
+        "inmarelibero/gitignore-checker": "dev-master"
     },
     "require-dev": {
-        "cweagans/composer-patches": "^1.7",
         "wp-cli/wp-cli-tests": "^3",
         "wp-cli/scaffold-command": "^2",
         "wp-cli/extension-command": "^2"
     },
     "extra": {
-        "patches": {
-            "inmarelibero/gitignore-checker": {
-                "Allow setting .gitignore filename": "https://github.com/inmarelibero/gitignore-checker/pull/11.patch",
-                "Skip comment lines and empty lines": "https://github.com/inmarelibero/gitignore-checker/pull/12.patch"
-            }
-        },
         "commands": [
             "dist-archive"
         ],
