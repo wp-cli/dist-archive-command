@@ -238,7 +238,7 @@ class Dist_Archive_Command {
 					array_map(
 						function( $ignored_file ) use ( $source_path ) {
 							if ( php_uname( 's' ) === 'Linux' ) {
-								return '^' . preg_quote( $source_path . $ignored_file, '\\' ) . '$';
+								return preg_quote( basename( $source_path ) . $ignored_file, '\\' );
 							} else {
 								return '^' . preg_quote( basename( $source_path ) . $ignored_file, '\\' ) . '$';
 							}
