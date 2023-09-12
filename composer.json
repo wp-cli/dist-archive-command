@@ -58,7 +58,6 @@
     },
     "config": {
         "allow-plugins": {
-            "cweagans/composer-patches": true,
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "johnpbloch/wordpress-core-installer": true
         }
