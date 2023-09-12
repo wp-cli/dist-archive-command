@@ -223,7 +223,7 @@ class Dist_Archive_Command {
 						implode(
 							"\n",
 							array_map(
-								function( $relative_path ) use ( $source_path ) {
+								function ( $relative_path ) use ( $source_path ) {
 									return basename( $source_path ) . $relative_path;
 								},
 								$this->get_file_list( $source_path )
@@ -236,7 +236,7 @@ class Dist_Archive_Command {
 				$exclude_list_filepath = $tmp_dir . '/exclude-file-list.txt';
 				$excludes              = array_filter(
 					array_map(
-						function( $ignored_file ) use ( $source_path ) {
+						function ( $ignored_file ) use ( $source_path ) {
 							if ( php_uname( 's' ) === 'Linux' ) {
 								return preg_quote( basename( $source_path ) . $ignored_file, '\\' );
 							} else {
