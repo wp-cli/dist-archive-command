@@ -316,7 +316,6 @@ Feature: Generate a distribution archive of a project
       """
     And the <plugin-dirname>.<extension> file should exist
 
-#    When I run `rm -rf foo`
     When I run `mv foo sourcefoo`
     Then the foo directory should not exist
 
