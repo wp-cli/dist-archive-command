@@ -1,3 +1,4 @@
+@require-php-7.1
 Feature: Generate a distribution archive of a project
 
   Scenario: Generates a ZIP archive by default

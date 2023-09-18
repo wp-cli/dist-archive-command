@@ -1,5 +1,5 @@
 # The "Examples" dataprovider is needed due to differences in zip and tar.
-
+@require-php-7.1
 Feature: Generate a distribution archive of a project
 
   Scenario: Ignores backup files with a period and tilde
