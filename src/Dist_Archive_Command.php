@@ -107,7 +107,7 @@ class Dist_Archive_Command {
 			$file_ignore_rules = explode( PHP_EOL, file_get_contents( $dist_ignore_filepath ) );
 		} else {
 			WP_CLI::warning( 'No .distignore file found. All files in directory included in archive.' );
-			$file_ignore_rules = array();
+			$file_ignore_rules = [];
 		}
 
 		$source_base  = basename( $path );
@@ -158,13 +158,13 @@ class Dist_Archive_Command {
 		}
 
 		if ( $archive_base !== $source_base || $this->is_path_contains_symlink( $path ) ) {
-			$tmp_dir  = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid( $archive_base . '.' . $version );
+			$tmp_dir  = sys_get_temp_dir() . '/' . uniqid( "{$archive_base}.{$version}" );
 			$new_path = $tmp_dir . DIRECTORY_SEPARATOR . $archive_base;
 			mkdir( $new_path, 0777, true );
 			foreach ( $this->get_file_list( $path ) as $relative_filepath ) {
 				$source_item = $path . $relative_filepath;
 				if ( is_dir( $source_item ) ) {
-					mkdir( $new_path . '/' . $relative_filepath, 0777, true );
+					mkdir( "{$new_path}/{$relative_filepath}", 0777, true );
 				} else {
 					copy( $source_item, $new_path . $relative_filepath );
 				}
@@ -192,7 +192,7 @@ class Dist_Archive_Command {
 				$archive_filename .= '.tar.gz';
 			}
 		}
-		$archive_absolute_filepath = $archive_path . '/' . $archive_filename;
+		$archive_absolute_filepath = "{$archive_path}/{$archive_filename}";
 
 		chdir( dirname( $source_path ) );
 
@@ -213,7 +213,7 @@ class Dist_Archive_Command {
 				$cmd = "tar -zcvf {$archive_absolute_filepath} {$archive_base}";
 			}
 		} else {
-			$tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid( $archive_base . '.' . $version );
+			$tmp_dir = sys_get_temp_dir() . '/' . uniqid( "{$archive_base}.{$version}" );
 			mkdir( $tmp_dir, 0777, true );
 			if ( 'zip' === $assoc_args['format'] ) {
 				$include_list_filepath = $tmp_dir . '/include-file-list.txt';
@@ -233,15 +233,12 @@ class Dist_Archive_Command {
 				);
 				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_base} -i@{$include_list_filepath}";
 			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$exclude_list_filepath = $tmp_dir . '/exclude-file-list.txt';
+				$exclude_list_filepath = "{$tmp_dir}/exclude-file-list.txt";
 				$excludes              = array_filter(
 					array_map(
 						function ( $ignored_file ) use ( $source_path ) {
-							if ( php_uname( 's' ) === 'Linux' ) {
-								return preg_quote( basename( $source_path ) . $ignored_file, '\\' );
-							} else {
-								return '^' . preg_quote( basename( $source_path ) . $ignored_file, '\\' ) . '$';
-							}
+							$regex = preg_quote( basename( $source_path ) . $ignored_file, '\\' );
+							return ( php_uname( 's' ) === 'Linux' ) ? $regex : "^{$regex}$";
 						},
 						$this->get_file_list( $source_path, true )
 					)
@@ -250,7 +247,8 @@ class Dist_Archive_Command {
 					$exclude_list_filepath,
 					trim( implode( "\n", $excludes ) )
 				);
-				$cmd = 'tar  ' . ( ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '' ) . " --exclude-from={$exclude_list_filepath} -zcvf {$archive_absolute_filepath} {$archive_base}";
+				$anchored_flag = ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '';
+				$cmd           = "tar {$anchored_flag} --exclude-from={$exclude_list_filepath} -zcvf {$archive_absolute_filepath} {$archive_base}";
 			}
 		}
 
@@ -418,17 +416,17 @@ class Dist_Archive_Command {
 	 *
 	 * Exclude list should contain directory names when no files in that directory exist in the include list.
 	 *
-	 * @param string $path Path to process
-	 * @param bool $excluded Return the list of files to exclude. Default (false) returns the list of files to include.
-	 * @return string[]
+	 * @param string $path Path to process.
+	 * @param bool $excluded Whether to return the list of files to exclude. Default (false) returns the list of files to include.
+	 * @return string[] Filtered list of files to include or exclude (depending on $excluded flag).
 	 */
 	private function get_file_list( $path, $excluded = false ) {
 
-		$included_files = array();
-		$excluded_files = array();
+		$included_files = [];
+		$excluded_files = [];
 
 		if ( ! is_dir( $path ) ) {
-			throw new Exception( 'Path `' . $path . '` is not a directory' );
+			throw new Exception( "Path '{$path}' is not a directory." );
 		}
 
 		$iterator = new RecursiveIteratorIterator(
