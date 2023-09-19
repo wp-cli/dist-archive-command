@@ -413,7 +413,7 @@ class Dist_Archive_Command {
 	}
 
 	/**
-	 * Filter all files in a path to list of file to include or to exclude from the archive.
+	 * Filter all files in a path to either: a list of files to include, or a list of files to exclude, from the archive.
 	 *
 	 * Exclude list should contain directory names when no files in that directory exist in the include list.
 	 *
