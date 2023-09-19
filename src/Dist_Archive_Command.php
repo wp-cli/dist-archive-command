@@ -1,5 +1,6 @@
 <?php
 
+use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 use WP_CLI\Utils;
 
 /**
@@ -7,7 +8,7 @@ use WP_CLI\Utils;
  */
 class Dist_Archive_Command {
 	/**
-	 * @var \Inmarelibero\GitIgnoreChecker\GitIgnoreChecker
+	 * @var GitIgnoreChecker
 	 */
 	private $checker;
 
@@ -70,7 +71,7 @@ class Dist_Archive_Command {
 			WP_CLI::error( 'Provided input path is not a directory.' );
 		}
 
-		$this->checker = new \Inmarelibero\GitIgnoreChecker\GitIgnoreChecker( $path, '.distignore' );
+		$this->checker = new GitIgnoreChecker( $path, '.distignore' );
 
 		if ( isset( $args[1] ) ) {
 			// If the end of the string is a filename (file.ext), use it for the output archive filename.
