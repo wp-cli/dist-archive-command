@@ -65,45 +65,11 @@ class Dist_Archive_Command {
 	 * @when before_wp_load
 	 */
 	public function __invoke( $args, $assoc_args ) {
-		list( $path ) = $args;
-		$path         = rtrim( realpath( $path ), '/' );
-		if ( ! is_dir( $path ) ) {
-			WP_CLI::error( 'Provided input path is not a directory.' );
-		}
 
-		$this->checker = new GitIgnoreChecker( $path, '.distignore' );
+		list( $source_dir_path, $destination_dir_path, $archive_file_name, $archive_output_dir_name ) = $this->get_file_paths_and_names( $args, $assoc_args );
 
-		if ( isset( $args[1] ) ) {
-			// If the end of the string is a filename (file.ext), use it for the output archive filename.
-			if ( 1 === preg_match( '/^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\.[a-zA-Z0-9_-]+$/', basename( $args[1] ) ) ) {
-				$archive_filename = basename( $args[1] );
-
-				// If only the filename was supplied, use the plugin's parent directory for output.
-				if ( basename( $args[1] ) === $args[1] ) {
-					$archive_path = dirname( $path );
-				} else {
-					// Otherwise use the supplied directory.
-					$archive_path = dirname( $args[1] );
-				}
-			} else {
-				$archive_path     = $args[1];
-				$archive_filename = null;
-			}
-		} else {
-			if ( 0 !== strpos( $path, '/' ) ) {
-				$archive_path = dirname( getcwd() . '/' . $path );
-			} else {
-				$archive_path = dirname( $path );
-			}
-			$archive_filename = null;
-		}
-
-		// If the  path is not absolute, it is relative.
-		if ( 0 !== strpos( $archive_path, '/' ) ) {
-			$archive_path = rtrim( getcwd() . '/' . ltrim( $archive_path, '/' ), '/' );
-		}
-
-		$dist_ignore_filepath = $path . '/.distignore';
+		$this->checker        = new GitIgnoreChecker( $source_dir_path, '.distignore' );
+		$dist_ignore_filepath = $source_dir_path . '/.distignore';
 		if ( file_exists( $dist_ignore_filepath ) ) {
 			$file_ignore_rules = explode( PHP_EOL, file_get_contents( $dist_ignore_filepath ) );
 		} else {
@@ -111,59 +77,12 @@ class Dist_Archive_Command {
 			$file_ignore_rules = [];
 		}
 
-		$source_base  = basename( $path );
-		$archive_base = isset( $assoc_args['plugin-dirname'] ) ? rtrim( $assoc_args['plugin-dirname'], '/' ) : $source_base;
-
-		$version = '';
-
-		/**
-		 * If the path is a theme (meaning it contains a style.css file)
-		 * parse the theme's version from the headers using a regex pattern.
-		 * The pattern used is extracted from the get_file_data() function in core.
-		 *
-		 * @link https://developer.wordpress.org/reference/functions/get_file_data/
-		 */
-		if ( file_exists( $path . '/style.css' ) ) {
-			$contents = file_get_contents( $path . '/style.css', false, null, 0, 5000 );
-			$contents = str_replace( "\r", "\n", $contents );
-			$pattern  = '/^' . preg_quote( 'Version', ',' ) . ':(.*)$/mi';
-			if ( preg_match( $pattern, $contents, $match ) && $match[1] ) {
-				$version = trim( preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
-			}
-		}
-
-		if ( empty( $version ) ) {
-			foreach ( glob( $path . '/*.php' ) as $php_file ) {
-				$contents = file_get_contents( $php_file, false, null, 0, 5000 );
-				$version  = $this->get_version_in_code( $contents );
-				if ( ! empty( $version ) ) {
-					$version = trim( $version );
-					break;
-				}
-			}
-		}
-
-		if ( empty( $version ) && file_exists( $path . '/composer.json' ) ) {
-			$composer_obj = json_decode( file_get_contents( $path . '/composer.json' ) );
-			if ( ! empty( $composer_obj->version ) ) {
-				$version = trim( $composer_obj->version );
-			}
-		}
-
-		if ( ! empty( $version ) && false !== stripos( $version, '-alpha' ) && is_dir( $path . '/.git' ) ) {
-			$response   = WP_CLI::launch( "cd {$path}; git log --pretty=format:'%h' -n 1", false, true );
-			$maybe_hash = trim( $response->stdout );
-			if ( $maybe_hash && 7 === strlen( $maybe_hash ) ) {
-				$version .= '-' . $maybe_hash;
-			}
-		}
-
-		if ( $archive_base !== $source_base || $this->is_path_contains_symlink( $path ) ) {
-			$tmp_dir  = sys_get_temp_dir() . '/' . uniqid( "{$archive_base}.{$version}" );
-			$new_path = $tmp_dir . DIRECTORY_SEPARATOR . $archive_base;
+		if ( basename( $source_dir_path ) !== $archive_output_dir_name || $this->is_path_contains_symlink( $source_dir_path ) ) {
+			$tmp_dir  = sys_get_temp_dir() . '/' . uniqid( $archive_file_name );
+			$new_path = "{$tmp_dir}/{$archive_output_dir_name}";
 			mkdir( $new_path, 0777, true );
-			foreach ( $this->get_file_list( $path ) as $relative_filepath ) {
-				$source_item = $path . $relative_filepath;
+			foreach ( $this->get_file_list( $source_dir_path ) as $relative_filepath ) {
+				$source_item = $source_dir_path . $relative_filepath;
 				if ( is_dir( $source_item ) ) {
 					mkdir( "{$new_path}/{$relative_filepath}", 0777, true );
 				} else {
@@ -172,49 +91,23 @@ class Dist_Archive_Command {
 			}
 			$source_path = $new_path;
 		} else {
-			$source_path = $path;
+			$source_path = $source_dir_path;
 		}
 
-		if ( is_null( $archive_filename ) ) {
-
-			if ( ! empty( $version ) ) {
-				if ( ! empty( $assoc_args['filename-format'] ) ) {
-					$archive_filename = str_replace( [ '{name}', '{version}' ], [ $archive_base, $version ], $assoc_args['filename-format'] );
-				} else {
-					$archive_filename = $archive_base . '.' . $version;
-				}
-			} else {
-				$archive_filename = $archive_base;
-			}
-
-			if ( 'zip' === $assoc_args['format'] ) {
-				$archive_filename .= '.zip';
-			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$archive_filename .= '.tar.gz';
-			}
-		}
-		$archive_absolute_filepath = "{$archive_path}/{$archive_filename}";
+		$archive_absolute_filepath = "{$destination_dir_path}/{$archive_file_name}";
 
 		chdir( dirname( $source_path ) );
 
-		if ( Utils\get_flag_value( $assoc_args, 'create-target-dir' ) ) {
-			$this->maybe_create_directory( $archive_absolute_filepath );
-		}
-
-		if ( ! is_dir( dirname( $archive_path ) ) ) {
-			WP_CLI::error( "Target directory does not exist: {$archive_path}" );
-		}
-
 		// If the files are being zipped in place, we need the exclusion rules.
 		// whereas if they were copied for any reasons above, the rules have already been applied.
-		if ( $source_path !== $path || empty( $file_ignore_rules ) ) {
+		if ( $source_path !== $source_dir_path || empty( $file_ignore_rules ) ) {
 			if ( 'zip' === $assoc_args['format'] ) {
-				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_base}";
+				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_output_dir_name}";
 			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$cmd = "tar -zcvf {$archive_absolute_filepath} {$archive_base}";
+				$cmd = "tar -zcvf {$archive_absolute_filepath} {$archive_output_dir_name}";
 			}
 		} else {
-			$tmp_dir = sys_get_temp_dir() . '/' . uniqid( "{$archive_base}.{$version}" );
+			$tmp_dir = sys_get_temp_dir() . '/' . uniqid( $archive_file_name );
 			mkdir( $tmp_dir, 0777, true );
 			if ( 'zip' === $assoc_args['format'] ) {
 				$include_list_filepath = $tmp_dir . '/include-file-list.txt';
@@ -232,7 +125,7 @@ class Dist_Archive_Command {
 						)
 					)
 				);
-				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_base} -i@{$include_list_filepath}";
+				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_output_dir_name} -i@{$include_list_filepath}";
 			} elseif ( 'targz' === $assoc_args['format'] ) {
 				$exclude_list_filepath = "{$tmp_dir}/exclude-file-list.txt";
 				$excludes              = array_filter(
@@ -249,7 +142,7 @@ class Dist_Archive_Command {
 					trim( implode( "\n", $excludes ) )
 				);
 				$anchored_flag = ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '';
-				$cmd           = "tar {$anchored_flag} --exclude-from={$exclude_list_filepath} -zcvf {$archive_absolute_filepath} {$archive_base}";
+				$cmd           = "tar {$anchored_flag} --exclude-from={$exclude_list_filepath} -zcvf {$archive_absolute_filepath} {$archive_output_dir_name}";
 			}
 		}
 
@@ -267,15 +160,158 @@ class Dist_Archive_Command {
 	}
 
 	/**
+	 * Determine the full paths and names to use from the CLI input.
+	 *
+	 * I.e. the source directory, the output directory, the output filename, and the directory name the archive will
+	 * extract to.
+	 *
+	 * @param non-empty-array<string> $args Source path (required), target (path or name, optional).
+	 * @param array{format:string,plugin-dirname?:string,filename-format?:string,create-target-dir?:string} $assoc_args
+	 *
+	 * @return array<string, string, string, string> $source_dir_path, $destination_dir_path, $destination_archive_name, $archive_output_dir_name
+	 */
+	private function get_file_paths_and_names( $args, $assoc_args ) {
+
+		$source_dir_path = realpath( $args[0] );
+		if ( ! is_dir( $source_dir_path ) ) {
+			WP_CLI::error( 'Provided input path is not a directory.' );
+		}
+
+		if ( isset( $args[1] ) ) {
+			$destination_input = $args[1];
+			// If the end of the string is a filename (file.ext), use it for the output archive filename.
+			if ( 1 === preg_match( '/(zip$|tar$|tar.gz$)/', $destination_input ) ) {
+				$archive_file_name = basename( $destination_input );
+
+				// If only the filename was supplied, use the plugin's parent directory for output.
+				if ( basename( $destination_input ) === $destination_input ) {
+					$destination_dir_path = dirname( $source_dir_path );
+				} else {
+					// Otherwise use the supplied directory.
+					$destination_dir_path = dirname( $destination_input );
+				}
+			} else {
+				// Only a path was supplied, not a filename.
+				$destination_dir_path = $destination_input;
+				$archive_file_name    = null;
+			}
+		} else {
+			// Use the plugin's parent directory for output.
+			$destination_dir_path = dirname( $source_dir_path );
+			$archive_file_name    = null;
+		}
+
+		// Convert relative path to absolute path (check does it begin with e.g. "c:" or "/").
+		if ( 1 !== preg_match( '/(^[a-zA-Z]+:|^\/)/', $destination_dir_path ) ) {
+			$destination_dir_path = getcwd() . '/' . $destination_dir_path;
+		}
+
+		if ( Utils\get_flag_value( $assoc_args, 'create-target-dir' ) ) {
+			$this->maybe_create_directory( $destination_dir_path );
+		}
+
+		$destination_dir_path = realpath( $destination_dir_path );
+
+		if ( ! is_dir( $destination_dir_path ) ) {
+			WP_CLI::error( "Target directory does not exist: {$destination_dir_path}" );
+		}
+
+		// Use the optionally supplied plugin-dirname, or use the name of the directory containing the source files.
+		$archive_output_dir_name = isset( $assoc_args['plugin-dirname'] )
+			? rtrim( $assoc_args['plugin-dirname'], '/' )
+			: basename( $source_dir_path );
+
+		if ( is_null( $archive_file_name ) ) {
+
+			$version = $this->get_version( $source_dir_path );
+
+			if ( ! empty( $version ) ) {
+				if ( ! empty( $assoc_args['filename-format'] ) ) {
+					$archive_file_stem = str_replace( [ '{name}', '{version}' ], [ $archive_output_dir_name, $version ], $assoc_args['filename-format'] );
+				} else {
+					$archive_file_stem = $archive_output_dir_name . '.' . $version;
+				}
+			} else {
+				$archive_file_stem = $archive_output_dir_name;
+			}
+
+			if ( 'zip' === $assoc_args['format'] ) {
+				$archive_file_name = $archive_file_stem . '.zip';
+			} elseif ( 'targz' === $assoc_args['format'] ) {
+				$archive_file_name = $archive_file_stem . '.tar.gz';
+			}
+		}
+
+		return [ $source_dir_path, $destination_dir_path, $archive_file_name, $archive_output_dir_name ];
+	}
+
+	/**
+	 * Determine the plugin version from style.css, the main plugin .php file, or composer.json.
+	 *
+	 * Append the commit hash to `-alpha` versions.
+	 *
+	 * @param string $source_dir_path
+	 *
+	 * @return string
+	 */
+	private function get_version( $source_dir_path ) {
+
+		$version = '';
+
+		/**
+		 * If the path is a theme (meaning it contains a style.css file)
+		 * parse the theme's version from the headers using a regex pattern.
+		 * The pattern used is extracted from the get_file_data() function in core.
+		 *
+		 * @link https://developer.wordpress.org/reference/functions/get_file_data/
+		 */
+		if ( file_exists( $source_dir_path . '/style.css' ) ) {
+			$contents = file_get_contents( $source_dir_path . '/style.css', false, null, 0, 5000 );
+			$contents = str_replace( "\r", "\n", $contents );
+			$pattern  = '/^' . preg_quote( 'Version', ',' ) . ':(.*)$/mi';
+			if ( preg_match( $pattern, $contents, $match ) && $match[1] ) {
+				$version = trim( preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
+			}
+		}
+
+		if ( empty( $version ) ) {
+			foreach ( glob( $source_dir_path . '/*.php' ) as $php_file ) {
+				$contents = file_get_contents( $php_file, false, null, 0, 5000 );
+				$version  = $this->get_version_in_code( $contents );
+				if ( ! empty( $version ) ) {
+					$version = trim( $version );
+					break;
+				}
+			}
+		}
+
+		if ( empty( $version ) && file_exists( $source_dir_path . '/composer.json' ) ) {
+			$composer_obj = json_decode( file_get_contents( $source_dir_path . '/composer.json' ) );
+			if ( ! empty( $composer_obj->version ) ) {
+				$version = trim( $composer_obj->version );
+			}
+		}
+
+		if ( ! empty( $version ) && false !== stripos( $version, '-alpha' ) && is_dir( $source_dir_path . '/.git' ) ) {
+			$response   = WP_CLI::launch( "cd {$source_dir_path}; git log --pretty=format:'%h' -n 1", false, true );
+			$maybe_hash = trim( $response->stdout );
+			if ( $maybe_hash && 7 === strlen( $maybe_hash ) ) {
+				$version .= '-' . $maybe_hash;
+			}
+		}
+
+		return $version;
+	}
+
+	/**
 	 * Create the directory for a target file if it does not exist yet.
 	 *
-	 * @param string $archive_file Path and filename of the target file.
+	 * @param string $destination_dir_path Directory path for the target file.
 	 * @return void
 	 */
-	private function maybe_create_directory( $archive_file ) {
-		$directory = dirname( $archive_file );
-		if ( ! is_dir( $directory ) ) {
-			mkdir( $directory, $mode = 0777, $recursive = true );
+	private function maybe_create_directory( $destination_dir_path ) {
+		if ( ! is_dir( $destination_dir_path ) ) {
+			mkdir( $destination_dir_path, $mode = 0777, $recursive = true );
 		}
 	}
 
@@ -385,18 +421,18 @@ class Dist_Archive_Command {
 	 * If the plugin contains a symlink, we will first copy it to a temp directory, potentially omitting any
 	 * symlinks that are excluded via the `.distignore` file, avoiding recursive loops as described in #57.
 	 *
-	 * @param string $path The filepath to the directory to check.
+	 * @param string $source_dir_path The path to the directory to check.
 	 *
 	 * @return bool
 	 */
-	protected function is_path_contains_symlink( $path ) {
+	protected function is_path_contains_symlink( $source_dir_path ) {
 
-		if ( ! is_dir( $path ) ) {
-			throw new Exception( 'Path `' . $path . '` is not a directory' );
+		if ( ! is_dir( $source_dir_path ) ) {
+			throw new Exception( 'Path `' . $source_dir_path . '` is not a directory' );
 		}
 
 		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
+			new RecursiveDirectoryIterator( $source_dir_path, RecursiveDirectoryIterator::SKIP_DOTS ),
 			RecursiveIteratorIterator::SELF_FIRST
 		);
 
@@ -417,21 +453,17 @@ class Dist_Archive_Command {
 	 *
 	 * Exclude list should contain directory names when no files in that directory exist in the include list.
 	 *
-	 * @param string $path Path to process.
+	 * @param string $source_dir_path Path to process.
 	 * @param bool $excluded Whether to return the list of files to exclude. Default (false) returns the list of files to include.
 	 * @return string[] Filtered list of files to include or exclude (depending on $excluded flag).
 	 */
-	private function get_file_list( $path, $excluded = false ) {
+	private function get_file_list( $source_dir_path, $excluded = false ) {
 
 		$included_files = [];
 		$excluded_files = [];
 
-		if ( ! is_dir( $path ) ) {
-			throw new Exception( "Path '{$path}' is not a directory." );
-		}
-
 		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS ),
+			new RecursiveDirectoryIterator( $source_dir_path, RecursiveDirectoryIterator::SKIP_DOTS ),
 			RecursiveIteratorIterator::SELF_FIRST
 		);
 
@@ -440,7 +472,7 @@ class Dist_Archive_Command {
 		 * @var SplFileInfo $item
 		 */
 		foreach ( $iterator as $item ) {
-			$relative_filepath = str_replace( $path, '', $item->getPathname() );
+			$relative_filepath = str_replace( $source_dir_path, '', $item->getPathname() );
 			if ( $this->checker->isPathIgnored( $relative_filepath ) ) {
 				$excluded_files[] = $relative_filepath;
 			} else {
@@ -448,9 +480,9 @@ class Dist_Archive_Command {
 			}
 		}
 
-		// Check all excluded directories and remove the from the excluded list if they contain included files.
+		// Check all excluded directories and remove them from the excluded list if they contain included files.
 		foreach ( $excluded_files as $excluded_file_index => $excluded_relative_path ) {
-			if ( ! is_dir( $path . $excluded_relative_path ) ) {
+			if ( ! is_dir( $source_dir_path . $excluded_relative_path ) ) {
 				continue;
 			}
 			foreach ( $included_files as $included_relative_path ) {
