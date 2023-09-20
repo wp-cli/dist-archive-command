@@ -60,7 +60,7 @@ class Dist_Archive_Command {
 	 *
 	 * [--filename-format=<filename-format>]
 	 * : Use a custom format for archive filename. Available substitutions: {name}, {version}.
-	 * This is ignored if the <target> parameter is provided  or the version cannot be determined.
+	 * This is ignored if the <target> parameter is provided or the version cannot be determined.
 	 * ---
 	 * default: "{name}.{version}"
 	 *
@@ -168,7 +168,7 @@ class Dist_Archive_Command {
 	 * extract to.
 	 *
 	 * @param non-empty-array<string> $args Source path (required), target (path or name, optional).
-	 * @param array{format:string,plugin-dirname?:string,filename-format?:string,create-target-dir?:string} $assoc_args
+	 * @param array{format:string,filename-format:string,plugin-dirname?:string,create-target-dir?:bool} $assoc_args
 	 *
 	 * @return array<string, string, string, string> $source_dir_path, $destination_dir_path, $destination_archive_name, $archive_output_dir_name
 	 */
