@@ -59,8 +59,10 @@ class Dist_Archive_Command {
 	 * ---
 	 *
 	 * [--filename-format=<filename-format>]
-	 * : Use a custom format for archive filename. Defaults to '{name}.{version}'.
-	 * This is ignored if a custom filename is provided or version does not exist.
+	 * : Use a custom format for archive filename. Available substitutions: {name}, {version}.
+	 * This is ignored if the <target> parameter is provided  or the version cannot be determined.
+	 * ---
+	 * default: "{name}.{version}"
 	 *
 	 * @when before_wp_load
 	 */
@@ -222,18 +224,12 @@ class Dist_Archive_Command {
 			: basename( $source_dir_path );
 
 		if ( is_null( $archive_file_name ) ) {
-
 			$version = $this->get_version( $source_dir_path );
 
-			if ( ! empty( $version ) ) {
-				if ( ! empty( $assoc_args['filename-format'] ) ) {
-					$archive_file_stem = str_replace( [ '{name}', '{version}' ], [ $archive_output_dir_name, $version ], $assoc_args['filename-format'] );
-				} else {
-					$archive_file_stem = $archive_output_dir_name . '.' . $version;
-				}
-			} else {
-				$archive_file_stem = $archive_output_dir_name;
-			}
+			// If the version number has been found, substitute it into the filename-format parameter, or just use the name.
+			$archive_file_stem = ! empty( $version )
+				? str_replace( [ '{name}', '{version}' ], [ $archive_output_dir_name, $version ], $assoc_args['filename-format'] )
+				: $archive_output_dir_name;
 
 			if ( 'zip' === $assoc_args['format'] ) {
 				$archive_file_name = $archive_file_stem . '.zip';
