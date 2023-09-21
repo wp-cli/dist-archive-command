@@ -185,13 +185,12 @@ class Dist_Archive_Command {
 			if ( 1 === preg_match( '/(zip$|tar$|tar.gz$)/', $destination_input ) ) {
 				$archive_file_name = basename( $destination_input );
 
-				// If only the filename was supplied, use the plugin's parent directory for output.
-				if ( basename( $destination_input ) === $destination_input ) {
-					$destination_dir_path = dirname( $source_dir_path );
-				} else {
-					// Otherwise use the supplied directory.
-					$destination_dir_path = dirname( $destination_input );
-				}
+				// If only the filename was supplied, use the plugin's parent directory for output, otherwise use
+				// the supplied directory.
+				$destination_dir_path = basename( $destination_input ) === $destination_input
+					? dirname( $source_dir_path )
+					: dirname( $destination_input );
+
 			} else {
 				// Only a path was supplied, not a filename.
 				$destination_dir_path = $destination_input;
