@@ -225,7 +225,7 @@ class Dist_Archive_Command {
 		if ( is_null( $archive_file_name ) ) {
 			$version = $this->get_version( $source_dir_path );
 
-			// If the version number has been found, substitute it into the filename-format parameter, or just use the name.
+			// If the version number has been found, substitute it into the filename-format template, or just use the name.
 			$archive_file_stem = ! empty( $version )
 				? str_replace( [ '{name}', '{version}' ], [ $archive_output_dir_name, $version ], $assoc_args['filename-format'] )
 				: $archive_output_dir_name;
