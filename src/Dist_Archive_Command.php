@@ -230,11 +230,9 @@ class Dist_Archive_Command {
 				? str_replace( [ '{name}', '{version}' ], [ $archive_output_dir_name, $version ], $assoc_args['filename-format'] )
 				: $archive_output_dir_name;
 
-			if ( 'zip' === $assoc_args['format'] ) {
-				$archive_file_name = $archive_file_stem . '.zip';
-			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$archive_file_name = $archive_file_stem . '.tar.gz';
-			}
+			$archive_file_name = 'zip' === $assoc_args['format']
+				? $archive_file_stem . '.zip'
+				: $archive_file_stem . '.tar.gz';
 		}
 
 		return [ $source_dir_path, $destination_dir_path, $archive_file_name, $archive_output_dir_name ];
