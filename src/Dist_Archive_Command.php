@@ -170,7 +170,7 @@ class Dist_Archive_Command {
 	 * @param non-empty-array<string> $args Source path (required), target (path or name, optional).
 	 * @param array{format:string,filename-format:string,plugin-dirname?:string,create-target-dir?:bool} $assoc_args
 	 *
-	 * @return array<string, string, string, string> $source_dir_path, $destination_dir_path, $destination_archive_name, $archive_output_dir_name
+	 * @return string[] $source_dir_path, $destination_dir_path, $destination_archive_name, $archive_output_dir_name
 	 */
 	private function get_file_paths_and_names( $args, $assoc_args ) {
 
