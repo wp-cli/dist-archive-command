@@ -308,6 +308,9 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/.travis.yml file should not exist
     And the wp-content/plugins/hello-world/bin directory should not exist
 
+  # This test does not work with SQLite because it wipes wp-content
+  # but SQLite requires an integration plugin & drop-in to work.
+  @require-mysql
   Scenario: Avoids recursive symlink
     Given a WP install in wordpress
     And a .distignore file:
