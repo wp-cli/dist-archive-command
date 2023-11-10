@@ -437,3 +437,32 @@ Feature: Generate a distribution archive of a project
       """
     And STDERR should be empty
     And the foo.zip file should exist
+
+  Scenario: Ask for confirmation if archive file exists
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+    And the wp-content/plugins/hello-world/hello-world.php file should exist
+    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/bin directory should exist
+
+    When I run `mkdir subdir`
+    Then the subdir directory should exist
+
+    When I run `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip`
+    Then STDOUT should be:
+      """
+      Success: Created hello-world-dist.zip
+      """
+    And STDERR should be empty
+    And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
+
+    When I run `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip --yes`
+    Then STDOUT should contain:
+      """
+      Warning: The file '{RUN_DIR}/subdir/hello-world-dist.zip' already exists.
+      Success: Created hello-world-dist.zip
+      """
+    And STDERR should be empty
+    And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
