@@ -261,7 +261,6 @@ class Dist_Archive_Command {
 			}
 		}
 
-
 		$escape_whitelist = 'targz' === $assoc_args['format'] ? array( '^', '*' ) : array();
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
 		$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
