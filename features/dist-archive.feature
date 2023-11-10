@@ -463,7 +463,7 @@ Feature: Generate a distribution archive of a project
       """
       Success: Created hello-world-dist.zip
       """
-    And STDERR should not contain:
+    And STDERR should contain:
       """
       Warning: The file '{RUN_DIR}/subdir/hello-world-dist.zip' already exists.
       """
