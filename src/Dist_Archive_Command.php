@@ -46,6 +46,9 @@ class Dist_Archive_Command {
 	 * [--create-target-dir]
 	 * : Automatically create the target directory as needed.
 	 *
+	 * [--yes]
+	 * : Answer yes to confirm overwriting the archive file if it already exists.
+	 *
 	 * [--plugin-dirname=<plugin-slug>]
 	 * : Set the archive extract directory name. Defaults to project directory name.
 	 *
@@ -195,6 +198,11 @@ class Dist_Archive_Command {
 		}
 		$archive_absolute_filepath = "{$archive_path}/{$archive_filename}";
 
+		if ( file_exists( $archive_absolute_filepath ) ) {
+			WP_CLI::warning( "The file '{$archive_absolute_filepath}' already exists." );
+			WP_CLI::confirm( 'Do you want to overwrite it?', $assoc_args );
+		}
+
 		chdir( dirname( $source_path ) );
 
 		if ( Utils\get_flag_value( $assoc_args, 'create-target-dir' ) ) {
@@ -253,8 +261,9 @@ class Dist_Archive_Command {
 			}
 		}
 
+
 		$escape_whitelist = 'targz' === $assoc_args['format'] ? array( '^', '*' ) : array();
-		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
+		WP_CLI::debug( "yay Running: {$cmd}", 'dist-archive' );
 		$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
 		$ret                   = WP_CLI::launch( $escaped_shell_command, false, true );
 		if ( 0 === $ret->return_code ) {
