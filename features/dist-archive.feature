@@ -139,10 +139,10 @@ Feature: Generate a distribution archive of a project
     And a foo/composer.json file:
       """
       {
-      "name": "runcommand/profile",
-      "description": "Quickly identify what's slow with WordPress.",
-      "homepage": "https://runcommand.io/wp/profile/",
-      "version": "0.2.0-alpha"
+        "name": "runcommand/profile",
+        "description": "Quickly identify what's slow with WordPress.",
+        "homepage": "https://runcommand.io/wp/profile/",
+        "version": "0.2.0-alpha"
       }
       """
 
@@ -459,9 +459,14 @@ Feature: Generate a distribution archive of a project
     And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip --yes`
-    Then STDOUT should contain:
+    Then STDERR should not contain:
       """
       Warning: The file '{RUN_DIR}/subdir/hello-world-dist.zip' already exists.
+      """
+
+    When I run `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip --yes`
+    Then STDOUT should contain:
+      """
       Success: Created hello-world-dist.zip
       """
     And STDERR should be empty
