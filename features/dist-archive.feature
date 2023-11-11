@@ -139,10 +139,10 @@ Feature: Generate a distribution archive of a project
     And a foo/composer.json file:
       """
       {
-        "name": "runcommand/profile",
-        "description": "Quickly identify what's slow with WordPress.",
-        "homepage": "https://runcommand.io/wp/profile/",
-        "version": "0.2.0-alpha"
+      "name": "runcommand/profile",
+      "description": "Quickly identify what's slow with WordPress.",
+      "homepage": "https://runcommand.io/wp/profile/",
+      "version": "0.2.0-alpha"
       }
       """
 
