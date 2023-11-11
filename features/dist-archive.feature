@@ -458,13 +458,24 @@ Feature: Generate a distribution archive of a project
     And STDERR should be empty
     And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
 
-    When I run `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip --yes`
+    When I run `echo "s" | wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip`
+    And STDERR should not contain:
+      """
+      Warning: File already exists
+      """
+    And STDOUT should contain:
+      """
+      Archive generation skipped.
+      """
+    And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
+
+    When I run `echo "r" | wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip`
+    And STDERR should not contain:
+      """
+      Warning: File already exists
+      """
     And STDOUT should contain:
       """
       Success: Created hello-world-dist.zip
-      """
-    And STDERR should contain:
-      """
-      Warning: The file '{RUN_DIR}/subdir/hello-world-dist.zip' already exists.
       """
     And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist

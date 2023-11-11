@@ -46,9 +46,6 @@ class Dist_Archive_Command {
 	 * [--create-target-dir]
 	 * : Automatically create the target directory as needed.
 	 *
-	 * [--yes]
-	 * : Answer yes to confirm overwriting the archive file if it already exists.
-	 *
 	 * [--plugin-dirname=<plugin-slug>]
 	 * : Set the archive extract directory name. Defaults to project directory name.
 	 *
@@ -199,8 +196,20 @@ class Dist_Archive_Command {
 		$archive_absolute_filepath = "{$archive_path}/{$archive_filename}";
 
 		if ( file_exists( $archive_absolute_filepath ) ) {
-			WP_CLI::warning( "The file '{$archive_absolute_filepath}' already exists." );
-			WP_CLI::confirm( 'Do you want to overwrite it?', $assoc_args );
+			WP_CLI::warning( 'File already exists' );
+			WP_CLI::log( $archive_absolute_filepath );
+			$answer      = \cli\prompt(
+				'Do you want to skip or replace it with a new archive?',
+				$default = false,
+				$marker  = ' [s/r]: '
+			);
+			$should_overwrite = 'r' === strtolower( $answer );
+			if ( ! $should_overwrite ) {
+				WP_CLI::log( 'Skipping' . PHP_EOL );
+				WP_CLI::log( 'Archive generation skipped.' );
+				exit( 0 );
+			}
+			WP_CLI::log( 'Replacing' . PHP_EOL );
 		}
 
 		chdir( dirname( $source_path ) );
