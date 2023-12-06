@@ -195,6 +195,23 @@ class Dist_Archive_Command {
 		}
 		$archive_absolute_filepath = "{$archive_path}/{$archive_filename}";
 
+		if ( file_exists( $archive_absolute_filepath ) ) {
+			WP_CLI::warning( 'Archive file already exists' );
+			WP_CLI::log( $archive_absolute_filepath );
+			$answer      = \cli\prompt(
+				'Do you want to skip or replace it with a new archive?',
+				$default = false,
+				$marker  = ' [s/r]: '
+			);
+			$should_overwrite = 'r' === strtolower( $answer );
+			if ( ! $should_overwrite ) {
+				WP_CLI::log( 'Skipping' . PHP_EOL );
+				WP_CLI::log( 'Archive generation skipped.' );
+				exit( 0 );
+			}
+			WP_CLI::log( 'Replacing' . PHP_EOL );
+		}
+
 		chdir( dirname( $source_path ) );
 
 		if ( Utils\get_flag_value( $assoc_args, 'create-target-dir' ) ) {
