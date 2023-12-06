@@ -63,6 +63,7 @@ class Dist_Archive_Command {
 	 * This is ignored if the <target> parameter is provided or the version cannot be determined.
 	 * ---
 	 * default: "{name}.{version}"
+	 * ---
 	 *
 	 * @when before_wp_load
 	 */
