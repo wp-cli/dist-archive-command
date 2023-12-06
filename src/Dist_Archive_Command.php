@@ -196,7 +196,7 @@ class Dist_Archive_Command {
 		$archive_absolute_filepath = "{$archive_path}/{$archive_filename}";
 
 		if ( file_exists( $archive_absolute_filepath ) ) {
-			WP_CLI::warning( 'File already exists' );
+			WP_CLI::warning( 'Archive file already exists' );
 			WP_CLI::log( $archive_absolute_filepath );
 			$answer      = \cli\prompt(
 				'Do you want to skip or replace it with a new archive?',

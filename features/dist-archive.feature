@@ -461,7 +461,7 @@ Feature: Generate a distribution archive of a project
     When I try `echo "s" | wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip`
     Then STDERR should contain:
       """
-      Warning: File already exists
+      Warning: Archive file already exists
       """
     And STDOUT should contain:
       """
@@ -482,7 +482,7 @@ Feature: Generate a distribution archive of a project
     When I try `echo "r" | wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip`
     And STDERR should contain:
       """
-      Warning: File already exists
+      Warning: Archive file already exists
       """
     And STDOUT should contain:
       """
