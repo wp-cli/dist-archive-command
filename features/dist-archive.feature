@@ -7,7 +7,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world`
@@ -24,7 +24,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp plugin install wp-content/plugins/hello-world.0.1.0.zip`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should not exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should not exist
     And the wp-content/plugins/hello-world/bin directory should not exist
 
   Scenario: Generates a tarball archive with a flag
@@ -33,7 +33,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world --format=targz`
@@ -50,7 +50,7 @@ Feature: Generate a distribution archive of a project
     When I try `cd wp-content/plugins/ && tar -zxvf hello-world.0.1.0.tar.gz`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should not exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should not exist
     And the wp-content/plugins/hello-world/bin directory should not exist
 
   Scenario: Generate a ZIP archive with a custom name
@@ -59,7 +59,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world hello-world.zip`
@@ -76,7 +76,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world wp-content`
@@ -93,7 +93,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `mkdir subdir`
@@ -113,7 +113,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world {RUN_DIR}/wp-content/`
@@ -168,7 +168,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I try `wp dist-archive wp-content/plugins/hello-world {RUN_DIR}/some/nested/folder/hello-world.zip`
@@ -191,7 +191,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive . {RUN_DIR}/hello-world.zip` from 'wp-content/plugins/hello-world'
@@ -208,7 +208,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive . hello-world.zip` from 'wp-content/plugins/hello-world'
@@ -225,7 +225,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive . ./hello-world.zip` from 'wp-content/plugins/hello-world'
@@ -242,7 +242,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world .`
@@ -259,7 +259,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world --plugin-dirname=foobar-world`
@@ -283,7 +283,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `awk '{sub("\\* Version","Version",$0); print}' {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php > hello-world.tmp && mv hello-world.tmp {RUN_DIR}/wp-content/plugins/hello-world/hello-world.php`
@@ -305,7 +305,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp plugin install wp-content/plugins/hello-world.0.2.0.zip`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should not exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should not exist
     And the wp-content/plugins/hello-world/bin directory should not exist
 
   # This test does not work with SQLite because it wipes wp-content
@@ -389,7 +389,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world --filename-format={name}-{version}`
@@ -406,7 +406,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world hello-world.zip --filename-format={name}-{version}`
@@ -444,7 +444,7 @@ Feature: Generate a distribution archive of a project
     When I run `wp scaffold plugin hello-world`
     Then the wp-content/plugins/hello-world directory should exist
     And the wp-content/plugins/hello-world/hello-world.php file should exist
-    And the wp-content/plugins/hello-world/.travis.yml file should exist
+    And the wp-content/plugins/hello-world/.circleci/config.yml file should exist
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `mkdir subdir`
