@@ -24,10 +24,18 @@ class Version_Tool {
 
 		if ( empty( $version ) ) {
 			foreach ( glob( $path . '/*.php' ) as $php_file ) {
-				$contents = file_get_contents( $php_file, false, null, 0, 5000 );
-				$version  = $this->get_version_in_code( $contents );
-				if ( ! empty( $version ) ) {
-					$version = trim( $version );
+				$headers = $this->get_file_data(
+					$php_file,
+					array(
+						'name'    => 'Plugin Name',
+						'version' => 'Version',
+					)
+				);
+				if ( empty( $headers['name'] ) ) {
+					continue;
+				}
+				if ( ! empty( $headers['version'] ) ) {
+					$version = $headers['version'];
 					break;
 				}
 			}
@@ -52,78 +60,60 @@ class Version_Tool {
 	}
 
 	/**
-	 * Gets the content of a version tag in any doc block in the given source code string.
+	 * Retrieves metadata from a file.
 	 *
-	 * The version tag might be specified as "@version x.y.z" or "Version: x.y.z" and it can
-	 * be preceded by an asterisk (*).
+	 * Modified slightly from WordPress 6.5.2 wp-includes/functions.php:6830
+	 * @see get_file_data()
+	 * @see https://github.com/WordPress/WordPress/blob/ddc3f387b5df4687f5b829119d0c0f797be674bf/wp-includes/functions.php#L6830-L6888
 	 *
-	 * @param string $code_str The source code string to look into.
-	 * @return null|string The detected version string.
+	 * Searches for metadata in the first 8 KB of a file, such as a plugin or theme.
+	 * Each piece of metadata must be on its own line. Fields can not span multiple
+	 * lines, the value will get cut at the end of the first line.
+	 *
+	 * @link https://codex.wordpress.org/File_Header
+	 *
+	 * @param string $file        Absolute path to the file.
+	 * @param array  $all_headers List of headers, in the format `array( 'HeaderKey' => 'Header Name' )`.
+	 * @return string[] Array of file header values keyed by header name.
 	 */
-	public function get_version_in_code( $code_str ) {
-		$tokens = array_values(
-			array_filter(
-				token_get_all( $code_str ),
-				function ( $token ) {
-					return ! is_array( $token ) || T_WHITESPACE !== $token[0];
-				}
-			)
-		);
-		foreach ( $tokens as $token ) {
-			if ( T_DOC_COMMENT === $token[0] ) {
-				$version = $this->get_version_in_docblock( $token[1] );
-				if ( null !== $version ) {
-					return $version;
-				}
+	private function get_file_data( string $file, array $all_headers ): array {
+
+		/**
+		 * @see wp_initial_constants()
+		 * `define( 'KB_IN_BYTES', 1024 );`
+		 */
+		$kb_in_bytes = 1024;
+
+		// Pull only the first 8 KB of the file in.
+		$file_data = file_get_contents( $file, false, null, 0, 8 * $kb_in_bytes );
+
+		if ( false === $file_data ) {
+			$file_data = '';
+		}
+
+		// Make sure we catch CR-only line endings.
+		$file_data = str_replace( "\r", "\n", $file_data );
+
+		/**
+		 * Strips close comment and close php tags from file headers used by WP.
+		 *
+		 * functions.php:6763
+		 *
+		 * @param string $str Header comment to clean up.
+		 * @return string
+		 */
+		$_cleanup_header_comment = function ( $str ) {
+			return trim( preg_replace( '/\s*(?:\*\/|\?>).*/', '', $str ) );
+		};
+
+		foreach ( $all_headers as $field => $regex ) {
+			if ( preg_match( '/^(?:[ \t]*<\?php)?[ \t\/*#@]*' . preg_quote( $regex, '/' ) . ':(.*)$/mi', $file_data, $match ) && $match[1] ) {
+				$all_headers[ $field ] = $_cleanup_header_comment( $match[1] );
+			} else {
+				$all_headers[ $field ] = '';
 			}
 		}
-		return null;
-	}
 
-	/**
-	 * Gets the content of a version tag in a docblock.
-	 *
-	 * @param string $docblock Docblock to parse.
-	 * @return null|string The content of the version tag.
-	 */
-	private function get_version_in_docblock( $docblock ) {
-		$docblocktags = $this->parse_doc_block( $docblock );
-		if ( isset( $docblocktags['version'] ) ) {
-			return $docblocktags['version'];
-		}
-		return null;
-	}
-
-	/**
-	 * Parses a docblock and gets an array of tags with their values.
-	 *
-	 * The tags might be specified as "@version x.y.z" or "Version: x.y.z" and they can
-	 * be preceded by an asterisk (*).
-	 *
-	 * This code is based on the 'phpactor' package.
-	 * @see https://github.com/phpactor/docblock/blob/master/lib/Parser.php
-	 *
-	 * @param string $docblock Docblock to parse.
-	 * @return array Associative array of parsed data.
-	 */
-	private function parse_doc_block( $docblock ) {
-		$tag_documentor = '{@([a-zA-Z0-9-_\\\]+)\s*?(.*)?}';
-		$tag_property   = '{\s*\*?\s*(.*?):(.*)}';
-		$lines          = explode( PHP_EOL, $docblock );
-		$tags           = [];
-
-		foreach ( $lines as $line ) {
-			if ( 0 === preg_match( $tag_documentor, $line, $matches ) ) {
-				if ( 0 === preg_match( $tag_property, $line, $matches ) ) {
-					continue;
-				}
-			}
-
-			$tag_name = strtolower( $matches[1] );
-			$metadata = trim( isset( $matches[2] ) ? $matches[2] : '' );
-
-			$tags[ $tag_name ] = $metadata;
-		}
-		return $tags;
+		return $all_headers;
 	}
 }
