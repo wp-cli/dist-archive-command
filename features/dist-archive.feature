@@ -494,3 +494,41 @@ Feature: Generate a distribution archive of a project
       """
     And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
     And the return code should be 0
+
+  Scenario: Uses version from plugin header when multiple versions are present
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      """
+    And a lifterlms/lifterlms.php file:
+      """
+      <?php
+      /**
+       * Main LifterLMS plugin file
+       *
+       * @version 5.3.0
+       *
+       * Plugin Name: LifterLMS
+       * Version: 7.6.0
+       */
+      """
+    And a lifterlms/class-lifterlms.php file:
+      """
+      <?php
+      /**
+       * Main LifterLMS class
+       *
+       * @package LifterLMS/Main
+       *
+       * @since 1.0.0
+       * @version 7.2.0
+       */
+      """
+
+    When I run `wp dist-archive lifterlms`
+    Then STDOUT should be:
+      """
+      Success: Created lifterlms.7.6.0.zip
+      """
+    And STDERR should be empty
+    And the lifterlms.7.6.0.zip file should exist
