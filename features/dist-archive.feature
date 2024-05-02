@@ -497,7 +497,7 @@ Feature: Generate a distribution archive of a project
 
   Scenario: Uses version from plugin header when multiple versions are present
     Given an empty directory
-    And a foo/.distignore file:
+    And a lifterlms/.distignore file:
       """
       """
     And a lifterlms/lifterlms.php file:
