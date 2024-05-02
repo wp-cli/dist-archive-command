@@ -76,7 +76,7 @@ wp package install wp-cli/dist-archive-command:@stable
 To install the latest development version of this package, use the following command instead:
 
 ```bash
-wp package install wp-cli/dist-archive-command:dev-master
+wp package install wp-cli/dist-archive-command:dev-main
 ```
 
 ## Contributing
