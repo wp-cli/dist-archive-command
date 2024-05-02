@@ -12,6 +12,8 @@ class Dist_Archive_Command {
 	 */
 	private $checker;
 
+	private Version_Tool $version_tool;
+
 	/**
 	 * Create a distribution archive based on a project's .distignore file.
 	 *
@@ -68,6 +70,8 @@ class Dist_Archive_Command {
 	 * @when before_wp_load
 	 */
 	public function __invoke( $args, $assoc_args ) {
+
+		$this->version_tool = new Version_Tool();
 
 		list( $source_dir_path, $destination_dir_path, $archive_file_name, $archive_output_dir_name ) = $this->get_file_paths_and_names( $args, $assoc_args );
 
@@ -241,7 +245,7 @@ class Dist_Archive_Command {
 			: basename( $source_dir_path );
 
 		if ( is_null( $archive_file_name ) ) {
-			$version = $this->get_version( $source_dir_path );
+			$version = $this->version_tool->get_version( $source_dir_path );
 
 			// If the version number has been found, substitute it into the filename-format template, or just use the name.
 			$archive_file_stem = ! empty( $version )
@@ -324,82 +328,6 @@ class Dist_Archive_Command {
 		if ( ! is_dir( $destination_dir_path ) ) {
 			mkdir( $destination_dir_path, $mode = 0777, $recursive = true );
 		}
-	}
-
-	/**
-	 * Gets the content of a version tag in any doc block in the given source code string.
-	 *
-	 * The version tag might be specified as "@version x.y.z" or "Version: x.y.z" and it can
-	 * be preceded by an asterisk (*).
-	 *
-	 * @param string $code_str The source code string to look into.
-	 * @return null|string The detected version string.
-	 */
-	private function get_version_in_code( $code_str ) {
-		$tokens = array_values(
-			array_filter(
-				token_get_all( $code_str ),
-				function ( $token ) {
-					return ! is_array( $token ) || T_WHITESPACE !== $token[0];
-				}
-			)
-		);
-		foreach ( $tokens as $token ) {
-			if ( T_DOC_COMMENT === $token[0] ) {
-				$version = $this->get_version_in_docblock( $token[1] );
-				if ( null !== $version ) {
-					return $version;
-				}
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Gets the content of a version tag in a docblock.
-	 *
-	 * @param string $docblock Docblock to parse.
-	 * @return null|string The content of the version tag.
-	*/
-	private function get_version_in_docblock( $docblock ) {
-		$docblocktags = $this->parse_doc_block( $docblock );
-		if ( isset( $docblocktags['version'] ) ) {
-			return $docblocktags['version'];
-		}
-		return null;
-	}
-
-	/**
-	 * Parses a docblock and gets an array of tags with their values.
-	 *
-	 * The tags might be specified as "@version x.y.z" or "Version: x.y.z" and they can
-	 * be preceded by an asterisk (*).
-	 *
-	 * This code is based on the 'phpactor' package.
-	 * @see https://github.com/phpactor/docblock/blob/master/lib/Parser.php
-	 *
-	 * @param string $docblock Docblock to parse.
-	 * @return array Associative array of parsed data.
-	*/
-	private function parse_doc_block( $docblock ) {
-		$tag_documentor = '{@([a-zA-Z0-9-_\\\]+)\s*?(.*)?}';
-		$tag_property   = '{\s*\*?\s*(.*?):(.*)}';
-		$lines          = explode( PHP_EOL, $docblock );
-		$tags           = [];
-
-		foreach ( $lines as $line ) {
-			if ( 0 === preg_match( $tag_documentor, $line, $matches ) ) {
-				if ( 0 === preg_match( $tag_property, $line, $matches ) ) {
-					continue;
-				}
-			}
-
-			$tag_name = strtolower( $matches[1] );
-			$metadata = trim( isset( $matches[2] ) ? $matches[2] : '' );
-
-			$tags[ $tag_name ] = $metadata;
-		}
-		return $tags;
 	}
 
 	/**
