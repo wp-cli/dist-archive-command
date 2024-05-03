@@ -14,7 +14,7 @@
     "require": {
         "php": ">=7.4",
         "wp-cli/wp-cli": "^2",
-        "inmarelibero/gitignore-checker": "^1.0.2"
+        "inmarelibero/gitignore-checker": "^1.0.4"
     },
     "require-dev": {
         "wp-cli/wp-cli-tests": "^4",
