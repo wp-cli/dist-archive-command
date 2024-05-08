@@ -484,10 +484,18 @@ class Dist_Archive_Command {
 		 */
 		foreach ( $iterator as $item ) {
 			$relative_filepath = str_replace( $source_dir_path, '', $item->getPathname() );
-			if ( $this->checker->isPathIgnored( $relative_filepath ) ) {
-				$excluded_files[] = $relative_filepath;
-			} else {
-				$included_files[] = $relative_filepath;
+			try {
+				if ( $this->checker->isPathIgnored( $relative_filepath ) ) {
+					$excluded_files[] = $relative_filepath;
+				} else {
+					$included_files[] = $relative_filepath;
+				}
+			} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
+				if ( $item->isLink() && ! file_exists( readlink( $item->getPathname() ) ) ) {
+					WP_CLI::error( "Broken symlink at {$relative_filepath}. Target missing at {$item->getLinkTarget()}." );
+				} else {
+					WP_CLI::error( $exception->getMessage() );
+				}
 			}
 		}
 

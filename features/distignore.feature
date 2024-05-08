@@ -385,3 +385,23 @@ Feature: Generate a distribution archive of a project
       | targz  | tar.gz    | tar -zxvf | foo            |
       | zip    | zip       | unzip     | bar7           |
       | targz  | tar.gz    | tar -zxvf | bar8           |
+
+  Scenario: Does not crash when a broken symlink is encountered
+    # @see https://github.com/wp-cli/dist-archive-command/issues/86
+    Given an empty directory
+    And an empty foo/target-directory directory
+    And a foo/.distignore file:
+      """
+      """
+
+    When I run `ln -s {RUN_DIR}/foo/target-directory {RUN_DIR}/foo/symlink`
+    Then STDERR should be empty
+
+    When I run `rm -rf {RUN_DIR}/foo/target-directory`
+    Then STDERR should be empty
+
+    When I try `wp dist-archive foo`
+    Then STDERR should contain:
+      """
+      Error: Broken symlink at /symlink. Target missing at
+      """
