@@ -11,10 +11,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.0.1.0.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.0.1.0.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the wp-content/plugins/hello-world.0.1.0.zip file should exist
 
@@ -37,10 +34,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world --format=targz`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.0.1.0.tar.gz
-      """
+    Then STDOUT should match /^Success: Created hello-world.0.1.0.tar.gz \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the wp-content/plugins/hello-world.0.1.0.tar.gz file should exist
 
@@ -63,10 +57,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world hello-world.zip`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the wp-content/plugins/hello-world.zip file should exist
     And the wp-content/plugins/hello-world.0.1.0.zip file should not exist
 
@@ -80,10 +71,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world wp-content`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.0.1.0.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.0.1.0.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the wp-content/hello-world.0.1.0.zip file should exist
     And the wp-content/plugins/hello-world.0.1.0.zip file should not exist
 
@@ -100,10 +88,7 @@ Feature: Generate a distribution archive of a project
     Then the subdir directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world.zip`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the {RUN_DIR}/subdir/hello-world.zip file should exist
 
@@ -117,10 +102,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world {RUN_DIR}/wp-content/`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.0.1.0.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.0.1.0.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the {RUN_DIR}/wp-content/hello-world.0.1.0.zip file should exist
 
@@ -147,10 +129,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo`
-    Then STDOUT should be:
-      """
-      Success: Created foo.0.2.0-alpha.zip
-      """
+    Then STDOUT should match /^Success: Created foo.0.2.0-alpha.zip \(Size: \d* [a-zA-Z]{1,3}\)$/
     And the foo.0.2.0-alpha.zip file should exist
 
     When I run `rm -rf foo`
@@ -178,10 +157,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive --create-target-dir wp-content/plugins/hello-world {RUN_DIR}/some/nested/folder/hello-world.zip`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the {RUN_DIR}/some/nested/folder/hello-world.zip file should exist
 
@@ -195,10 +171,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive . {RUN_DIR}/hello-world.zip` from 'wp-content/plugins/hello-world'
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the {RUN_DIR}/hello-world.zip file should exist
 
@@ -212,10 +185,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive . hello-world.zip` from 'wp-content/plugins/hello-world'
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the {RUN_DIR}/wp-content/plugins/hello-world.zip file should exist
 
@@ -229,10 +199,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive . ./hello-world.zip` from 'wp-content/plugins/hello-world'
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the {RUN_DIR}/wp-content/plugins/hello-world/hello-world.zip file should exist
 
@@ -246,10 +213,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world .`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.0.1.0.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.0.1.0.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the {RUN_DIR}/hello-world.0.1.0.zip file should exist
 
@@ -263,10 +227,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world --plugin-dirname=foobar-world`
-    Then STDOUT should be:
-      """
-      Success: Created foobar-world.0.1.0.zip
-      """
+    Then STDOUT should match /^Success: Created foobar-world.0.1.0.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the wp-content/plugins/foobar-world.0.1.0.zip file should exist
 
@@ -292,10 +253,7 @@ Feature: Generate a distribution archive of a project
     Then STDERR should be empty
 
     When I run `wp dist-archive wp-content/plugins/hello-world`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.0.2.0.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.0.2.0.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the wp-content/plugins/hello-world.0.2.0.zip file should exist
 
@@ -393,10 +351,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world --filename-format={name}-{version}`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world-0.1.0.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world-0.1.0.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the wp-content/plugins/hello-world-0.1.0.zip file should exist
 
@@ -410,10 +365,7 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/bin directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world hello-world.zip --filename-format={name}-{version}`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the wp-content/plugins/hello-world.zip file should exist
     And the wp-content/plugins/hello-world-0.1.0.zip file should not exist
@@ -431,10 +383,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo --filename-format={name}-{version}`
-    Then STDOUT should be:
-      """
-      Success: Created foo.zip
-      """
+    Then STDOUT should match /^Success: Created foo.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the foo.zip file should exist
 
@@ -451,10 +400,7 @@ Feature: Generate a distribution archive of a project
     Then the subdir directory should exist
 
     When I run `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip`
-    Then STDOUT should be:
-      """
-      Success: Created hello-world-dist.zip
-      """
+    Then STDOUT should match /^Success: Created hello-world-dist.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And STDERR should be empty
     And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
 
