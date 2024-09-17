@@ -494,3 +494,19 @@ Feature: Generate a distribution archive of a project
       """
     And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
     And the return code should be 0
+
+  Scenario: Do not ask for confirmation if archive file exists when using --force
+    Given a WP install
+
+    When I run `wp scaffold plugin hello-world`
+    Then the wp-content/plugins/hello-world directory should exist
+
+    When I run `wp dist-archive wp-content/plugins/hello-world ./hello-world-dist.zip`
+    Then STDERR should be empty
+
+    When I try `wp dist-archive wp-content/plugins/hello-world ./hello-world-dist.zip --force`
+    Then STDERR should be empty
+    And STDOUT should contain:
+      """
+      Success: Created hello-world-dist.zip
+      """
