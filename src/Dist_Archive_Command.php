@@ -103,10 +103,10 @@ class Dist_Archive_Command {
 		$archive_absolute_filepath = "{$destination_dir_path}/{$archive_file_name}";
 
 		if ( file_exists( $archive_absolute_filepath ) ) {
-			WP_CLI::warning( 'Archive file already exists' );
-			WP_CLI::log( $archive_absolute_filepath );
 			$should_overwrite = Utils\get_flag_value( $assoc_args, 'force' );
 			if ( ! $should_overwrite ) {
+				WP_CLI::warning( 'Archive file already exists' );
+				WP_CLI::log( $archive_absolute_filepath );
 				$answer      = \cli\prompt(
 					'Do you want to skip or replace it with a new archive?',
 					$default = false,
@@ -119,7 +119,7 @@ class Dist_Archive_Command {
 				WP_CLI::log( 'Archive generation skipped.' );
 				exit( 0 );
 			}
-			WP_CLI::log( 'Replacing' . PHP_EOL );
+			WP_CLI::log( "Replacing $archive_absolute_filepath" . PHP_EOL );
 		}
 
 		chdir( dirname( $source_path ) );
