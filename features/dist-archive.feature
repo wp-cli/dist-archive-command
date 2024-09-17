@@ -494,3 +494,15 @@ Feature: Generate a distribution archive of a project
       """
     And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
     And the return code should be 0
+
+    When I try `wp dist-archive wp-content/plugins/hello-world ./subdir/hello-world-dist.zip --force`
+    And STDERR should contain:
+      """
+      Warning: Archive file already exists
+      """
+    And STDOUT should contain:
+      """
+      Success: Created hello-world-dist.zip
+      """
+    And the {RUN_DIR}/subdir/hello-world-dist.zip file should exist
+    And the return code should be 0
