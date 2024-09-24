@@ -30,10 +30,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo`
-    Then STDOUT should be:
-      """
-      Success: Created foo.zip
-      """
+    Then STDOUT should match /^Success: Created foo.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
 
     When I run `rm -rf foo`
     Then the foo directory should not exist
@@ -67,10 +64,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo --format=<format>`
-    Then STDOUT should be:
-      """
-      Success: Created foo.<extension>
-      """
+    Then STDOUT should match /^Success: Created foo.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the foo.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -112,10 +106,7 @@ Feature: Generate a distribution archive of a project
     Then the foo/.git/subfolder/version.control file should exist
 
     When I run `wp dist-archive foo --format=<format>`
-    Then STDOUT should be:
-      """
-      Success: Created foo.<extension>
-      """
+    Then STDOUT should match /^Success: Created foo.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the foo.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -164,10 +155,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should be:
-      """
-      Success: Created <plugin-dirname>.<extension>
-      """
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -215,10 +203,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should be:
-      """
-      Success: Created <plugin-dirname>.<extension>
-      """
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -262,10 +247,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should be:
-      """
-      Success: Created <plugin-dirname>.<extension>
-      """
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -310,10 +292,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should be:
-      """
-      Success: Created <plugin-dirname>.<extension>
-      """
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `mv foo sourcefoo`
@@ -360,10 +339,7 @@ Feature: Generate a distribution archive of a project
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should be:
-      """
-      Success: Created <plugin-dirname>.<extension>
-      """
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `mv foo sourcefoo`

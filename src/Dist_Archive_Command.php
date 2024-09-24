@@ -177,8 +177,10 @@ class Dist_Archive_Command {
 		$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
 		$ret                   = WP_CLI::launch( $escaped_shell_command, false, true );
 		if ( 0 === $ret->return_code ) {
-			$filename = pathinfo( $archive_absolute_filepath, PATHINFO_BASENAME );
-			WP_CLI::success( "Created {$filename}" );
+			$filename  = pathinfo( $archive_absolute_filepath, PATHINFO_BASENAME );
+			$file_size = $this->get_size_format( filesize( $archive_absolute_filepath ), 2 );
+
+			WP_CLI::success( "Created {$filename} (Size: {$file_size})" );
 		} else {
 			$error = $ret->stderr ?: $ret->stdout;
 			WP_CLI::error( $error );
@@ -518,5 +520,83 @@ class Dist_Archive_Command {
 		}
 
 		return $excluded ? $excluded_files : $included_files;
+	}
+
+	/**
+	 * Converts a number of bytes to the largest unit the bytes will fit into.
+	 *
+	 * @param int $bytes    Number of bytes.
+	 * @param int $decimals Precision of number of decimal places.
+	 * @return string Number string.
+	 */
+	private function get_size_format( $bytes, $decimals = 0 ) {
+		// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Backfilling WP native constants.
+		if ( ! defined( 'KB_IN_BYTES' ) ) {
+			define( 'KB_IN_BYTES', 1024 );
+		}
+		if ( ! defined( 'MB_IN_BYTES' ) ) {
+			define( 'MB_IN_BYTES', 1024 * KB_IN_BYTES );
+		}
+		if ( ! defined( 'GB_IN_BYTES' ) ) {
+			define( 'GB_IN_BYTES', 1024 * MB_IN_BYTES );
+		}
+		if ( ! defined( 'TB_IN_BYTES' ) ) {
+			define( 'TB_IN_BYTES', 1024 * GB_IN_BYTES );
+		}
+		// phpcs:enable
+
+		$size_key = floor( log( $bytes ) / log( 1000 ) );
+		$sizes    = [ 'B', 'KB', 'MB', 'GB', 'TB' ];
+
+		$size_format = isset( $sizes[ $size_key ] ) ? $sizes[ $size_key ] : $sizes[0];
+
+		// Display the size as a number.
+		switch ( $size_format ) {
+			case 'TB':
+				$divisor = pow( 1000, 4 );
+				break;
+
+			case 'GB':
+				$divisor = pow( 1000, 3 );
+				break;
+
+			case 'MB':
+				$divisor = pow( 1000, 2 );
+				break;
+
+			case 'KB':
+				$divisor = 1000;
+				break;
+
+			case 'tb':
+			case 'TiB':
+				$divisor = TB_IN_BYTES;
+				break;
+
+			case 'gb':
+			case 'GiB':
+				$divisor = GB_IN_BYTES;
+				break;
+
+			case 'mb':
+			case 'MiB':
+				$divisor = MB_IN_BYTES;
+				break;
+
+			case 'kb':
+			case 'KiB':
+				$divisor = KB_IN_BYTES;
+				break;
+
+			case 'b':
+			case 'B':
+			default:
+				$divisor = 1;
+				break;
+		}
+
+		$size_format_display = preg_replace( '/IB$/u', 'iB', strtoupper( $size_format ) );
+
+		return round( (int) $bytes / $divisor, $decimals ) . ' ' . $size_format_display;
 	}
 }
