@@ -10,7 +10,7 @@ Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contr
 ## Using
 
 ~~~
-wp dist-archive <path> [<target>] [--create-target-dir] [--plugin-dirname=<plugin-slug>] [--format=<format>] [--filename-format=<filename-format>]
+wp dist-archive <path> [<target>] [--create-target-dir] [--force] [--plugin-dirname=<plugin-slug>] [--format=<format>] [--filename-format=<filename-format>]
 ~~~
 
 For a plugin in a directory 'wp-content/plugins/hello-world', this command
@@ -43,6 +43,9 @@ script in each project.
 
 	[--create-target-dir]
 		Automatically create the target directory as needed.
+
+	[--force]
+		Forces overwriting of the archive file if it already exists.
 
 	[--plugin-dirname=<plugin-slug>]
 		Set the archive extract directory name. Defaults to project directory name.
