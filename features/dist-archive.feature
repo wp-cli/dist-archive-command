@@ -456,3 +456,85 @@ Feature: Generate a distribution archive of a project
       """
       Success: Created hello-world-dist.zip
       """
+
+  Scenario: Removes existing files in the ZIP file
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      """
+    And a foo/foo.txt file:
+      """
+      Hello Foo
+      """
+    And a foo/bar.txt file:
+      """
+      Hello Bar
+      """
+
+    When I try `wp dist-archive foo`
+    Then the foo.zip file should exist
+
+    When I try `zipinfo -1 foo.zip`
+    Then STDOUT should contain:
+    """
+    foo/bar.txt
+    """
+    And STDOUT should contain:
+    """
+    foo/foo.txt
+    """
+
+    When I run `echo "foo.txt" > foo/.distignore`
+    And I try `wp dist-archive foo --force`
+    Then the foo.zip file should exist
+
+    When I try `zipinfo -1 foo.zip`
+    Then STDOUT should contain:
+    """
+    foo/bar.txt
+    """
+    And STDOUT should not contain:
+    """
+    foo/foo.txt
+    """
+
+  Scenario: Removes existing files in the tarball
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      """
+    And a foo/foo.txt file:
+      """
+      Hello Foo
+      """
+    And a foo/bar.txt file:
+      """
+      Hello Bar
+      """
+
+    When I try `wp dist-archive foo --format=targz`
+    Then the foo.tar.gz file should exist
+
+    When I try `tar -tf foo.tar.gz`
+    Then STDOUT should contain:
+    """
+    foo/bar.txt
+    """
+    And STDOUT should contain:
+    """
+    foo/foo.txt
+    """
+
+    When I run `echo "foo.txt" > foo/.distignore`
+    And I try `wp dist-archive foo --format=targz --force`
+    Then the foo.tar.gz file should exist
+
+    When I try `tar -tf foo.tar.gz`
+    Then STDOUT should contain:
+    """
+    foo/bar.txt
+    """
+    And STDOUT should not contain:
+    """
+    foo/foo.txt
+    """
