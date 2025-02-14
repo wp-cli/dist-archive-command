@@ -151,7 +151,7 @@ class Dist_Archive_Command {
 						)
 					)
 				);
-				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_output_dir_name} -i@{$include_list_filepath}";
+				$cmd = "zip --filesync -r '{$archive_absolute_filepath}' {$archive_output_dir_name} -i@{$include_list_filepath}";
 			} elseif ( 'targz' === $assoc_args['format'] ) {
 				$exclude_list_filepath = "{$tmp_dir}/exclude-file-list.txt";
 				$excludes              = array_filter(
