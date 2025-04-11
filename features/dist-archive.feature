@@ -476,13 +476,13 @@ Feature: Generate a distribution archive of a project
 
     When I try `zipinfo -1 foo.zip`
     Then STDOUT should contain:
-    """
-    foo/bar.txt
-    """
+      """
+      foo/bar.txt
+      """
     And STDOUT should contain:
-    """
-    foo/foo.txt
-    """
+      """
+      foo/foo.txt
+      """
 
     When I run `echo "foo.txt" > foo/.distignore`
     And I try `wp dist-archive foo --force`
@@ -490,13 +490,13 @@ Feature: Generate a distribution archive of a project
 
     When I try `zipinfo -1 foo.zip`
     Then STDOUT should contain:
-    """
-    foo/bar.txt
-    """
+      """
+      foo/bar.txt
+      """
     And STDOUT should not contain:
-    """
-    foo/foo.txt
-    """
+      """
+      foo/foo.txt
+      """
 
   Scenario: Removes existing files in the tarball
     Given an empty directory
@@ -517,13 +517,13 @@ Feature: Generate a distribution archive of a project
 
     When I try `tar -tf foo.tar.gz`
     Then STDOUT should contain:
-    """
-    foo/bar.txt
-    """
+      """
+      foo/bar.txt
+      """
     And STDOUT should contain:
-    """
-    foo/foo.txt
-    """
+      """
+      foo/foo.txt
+      """
 
     When I run `echo "foo.txt" > foo/.distignore`
     And I try `wp dist-archive foo --format=targz --force`
@@ -531,10 +531,10 @@ Feature: Generate a distribution archive of a project
 
     When I try `tar -tf foo.tar.gz`
     Then STDOUT should contain:
-    """
-    foo/bar.txt
-    """
+      """
+      foo/bar.txt
+      """
     And STDOUT should not contain:
-    """
-    foo/foo.txt
-    """
+      """
+      foo/foo.txt
+      """

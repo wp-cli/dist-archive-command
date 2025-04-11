@@ -1,6 +1,6 @@
 # The "Examples" dataprovider is needed due to differences in zip and tar.
 @require-php-7.1
-Feature: Generate a distribution archive of a project
+Feature: Generate a distribution archive of a project with .distignore
 
   Scenario: Ignores backup files with a period and tilde
     Given an empty directory
@@ -100,10 +100,8 @@ Feature: Generate a distribution archive of a project
       <?php
       echo 'Hello world';
       """
-
-    Then the foo/.git directory should exist
-
-    Then the foo/.git/subfolder/version.control file should exist
+    And the foo/.git directory should exist
+    And the foo/.git/subfolder/version.control file should exist
 
     When I run `wp dist-archive foo --format=<format>`
     Then STDOUT should match /^Success: Created foo.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
