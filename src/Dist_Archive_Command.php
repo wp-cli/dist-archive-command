@@ -305,7 +305,7 @@ class Dist_Archive_Command {
 					continue;
 				}
 				$contents = (string) file_get_contents( $php_file, false, null, 0, 5000 );
-				$ver  = $this->get_version_in_code( $contents );
+				$ver      = $this->get_version_in_code( $contents );
 				if ( ! empty( $ver ) ) {
 					$version = trim( $ver );
 					break;
@@ -417,7 +417,7 @@ class Dist_Archive_Command {
 				}
 			}
 
-			$tag_name = trim( isset( $matches[1] ) ? $matches[1] : '' );
+			$tag_name = trim( isset( $matches[1] ) ? strtolower( $matches[1] ) : '' );
 			$metadata = trim( isset( $matches[2] ) ? $matches[2] : '' );
 
 			$tags[ $tag_name ] = $metadata;
