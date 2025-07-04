@@ -77,7 +77,7 @@ class Dist_Archive_Command {
 		$this->checker        = new GitIgnoreChecker( $source_dir_path, '.distignore' );
 		$dist_ignore_filepath = $source_dir_path . '/.distignore';
 		if ( file_exists( $dist_ignore_filepath ) ) {
-			$file_ignore_rules = explode( PHP_EOL, file_get_contents( $dist_ignore_filepath ) );
+			$file_ignore_rules = explode( PHP_EOL, (string) file_get_contents( $dist_ignore_filepath ) );
 		} else {
 			WP_CLI::warning( 'No .distignore file found. All files in directory included in archive.' );
 			$file_ignore_rules = [];
@@ -123,6 +123,8 @@ class Dist_Archive_Command {
 		}
 
 		chdir( dirname( $source_path ) );
+
+		$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_output_dir_name}";
 
 		// If the files are being zipped in place, we need the exclusion rules.
 		// whereas if they were copied for any reasons above, the rules have already been applied.
@@ -175,10 +177,14 @@ class Dist_Archive_Command {
 		$escape_whitelist = 'targz' === $assoc_args['format'] ? array( '^', '*' ) : array();
 		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
 		$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
-		$ret                   = WP_CLI::launch( $escaped_shell_command, false, true );
+
+		/**
+		 * @var WP_CLI\ProcessRun $ret
+		 */
+		$ret = WP_CLI::launch( $escaped_shell_command, false, true );
 		if ( 0 === $ret->return_code ) {
 			$filename  = pathinfo( $archive_absolute_filepath, PATHINFO_BASENAME );
-			$file_size = $this->get_size_format( filesize( $archive_absolute_filepath ), 2 );
+			$file_size = $this->get_size_format( (int) filesize( $archive_absolute_filepath ), 2 );
 
 			WP_CLI::success( "Created {$filename} (Size: {$file_size})" );
 		} else {
@@ -201,7 +207,7 @@ class Dist_Archive_Command {
 	private function get_file_paths_and_names( $args, $assoc_args ) {
 
 		$source_dir_path = realpath( $args[0] );
-		if ( ! is_dir( $source_dir_path ) ) {
+		if ( ! $source_dir_path || ! is_dir( $source_dir_path ) ) {
 			WP_CLI::error( 'Provided input path is not a directory.' );
 		}
 
@@ -239,7 +245,7 @@ class Dist_Archive_Command {
 
 		$destination_dir_path = realpath( $destination_dir_path );
 
-		if ( ! is_dir( $destination_dir_path ) ) {
+		if ( ! $destination_dir_path || ! is_dir( $destination_dir_path ) ) {
 			WP_CLI::error( "Target directory does not exist: {$destination_dir_path}" );
 		}
 
@@ -285,33 +291,42 @@ class Dist_Archive_Command {
 		 * @link https://developer.wordpress.org/reference/functions/get_file_data/
 		 */
 		if ( file_exists( $source_dir_path . '/style.css' ) ) {
-			$contents = file_get_contents( $source_dir_path . '/style.css', false, null, 0, 5000 );
+			$contents = (string) file_get_contents( $source_dir_path . '/style.css', false, null, 0, 5000 );
 			$contents = str_replace( "\r", "\n", $contents );
 			$pattern  = '/^' . preg_quote( 'Version', ',' ) . ':(.*)$/mi';
 			if ( preg_match( $pattern, $contents, $match ) && $match[1] ) {
-				$version = trim( preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
+				$version = trim( (string) preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
 			}
 		}
 
 		if ( empty( $version ) ) {
-			foreach ( glob( $source_dir_path . '/*.php' ) as $php_file ) {
-				$contents = file_get_contents( $php_file, false, null, 0, 5000 );
-				$version  = $this->get_version_in_code( $contents );
-				if ( ! empty( $version ) ) {
-					$version = trim( $version );
+			foreach ( (array) glob( $source_dir_path . '/*.php' ) as $php_file ) {
+				if ( ! $php_file ) {
+					continue;
+				}
+				$contents = (string) file_get_contents( $php_file, false, null, 0, 5000 );
+				$ver      = $this->get_version_in_code( $contents );
+				if ( ! empty( $ver ) ) {
+					$version = trim( $ver );
 					break;
 				}
 			}
 		}
 
 		if ( empty( $version ) && file_exists( $source_dir_path . '/composer.json' ) ) {
-			$composer_obj = json_decode( file_get_contents( $source_dir_path . '/composer.json' ) );
-			if ( ! empty( $composer_obj->version ) ) {
+			/**
+			 * @var null|object{version?: string} $composer_obj
+			 */
+			$composer_obj = json_decode( (string) file_get_contents( $source_dir_path . '/composer.json' ) );
+			if ( $composer_obj && ! empty( $composer_obj->version ) ) {
 				$version = trim( $composer_obj->version );
 			}
 		}
 
 		if ( ! empty( $version ) && false !== stripos( $version, '-alpha' ) && is_dir( $source_dir_path . '/.git' ) ) {
+			/**
+			 * @var WP_CLI\ProcessRun $response
+			 */
 			$response   = WP_CLI::launch( "cd {$source_dir_path}; git log --pretty=format:'%h' -n 1", false, true );
 			$maybe_hash = trim( $response->stdout );
 			if ( $maybe_hash && 7 === strlen( $maybe_hash ) ) {
@@ -387,7 +402,7 @@ class Dist_Archive_Command {
 	 * @see https://github.com/phpactor/docblock/blob/master/lib/Parser.php
 	 *
 	 * @param string $docblock Docblock to parse.
-	 * @return array Associative array of parsed data.
+	 * @return array<string, string> Associative array of parsed data.
 	*/
 	private function parse_doc_block( $docblock ) {
 		$tag_documentor = '{@([a-zA-Z0-9-_\\\]+)\s*?(.*)?}';
@@ -402,7 +417,7 @@ class Dist_Archive_Command {
 				}
 			}
 
-			$tag_name = strtolower( $matches[1] );
+			$tag_name = trim( isset( $matches[1] ) ? strtolower( $matches[1] ) : '' );
 			$metadata = trim( isset( $matches[2] ) ? $matches[2] : '' );
 
 			$tags[ $tag_name ] = $metadata;
@@ -456,7 +471,6 @@ class Dist_Archive_Command {
 		);
 
 		/**
-		 * @var RecursiveIteratorIterator $iterator
 		 * @var SplFileInfo $item
 		 */
 		foreach ( $iterator as $item ) {
@@ -487,7 +501,6 @@ class Dist_Archive_Command {
 		);
 
 		/**
-		 * @var RecursiveIteratorIterator $iterator
 		 * @var SplFileInfo $item
 		 */
 		foreach ( $iterator as $item ) {
@@ -499,7 +512,7 @@ class Dist_Archive_Command {
 					$included_files[] = $relative_filepath;
 				}
 			} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
-				if ( $item->isLink() && ! file_exists( readlink( $item->getPathname() ) ) ) {
+				if ( $item->isLink() && ! file_exists( (string) readlink( $item->getPathname() ) ) ) {
 					WP_CLI::error( "Broken symlink at {$relative_filepath}. Target missing at {$item->getLinkTarget()}." );
 				} else {
 					WP_CLI::error( $exception->getMessage() );
