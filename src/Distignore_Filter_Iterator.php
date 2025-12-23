@@ -3,11 +3,13 @@
 use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
 /**
- * Filter iterator that skips ignored directories to improve performance.
+ * Filter iterator that skips descending into ignored directories to improve performance.
  *
  * This filter prevents RecursiveIteratorIterator from descending into
  * directories that are marked as ignored in .distignore, avoiding unnecessary
  * iteration through thousands of files in directories like node_modules.
+ * However, it still yields the ignored directories themselves so they can
+ * be properly tracked in exclude lists.
  */
 class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	/**
@@ -35,27 +37,40 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 
 	/**
 	 * Check whether the current element of the iterator is acceptable.
+	 * We accept all elements so they can be checked in get_file_list().
 	 *
-	 * @return bool True if the current element is acceptable, false otherwise.
+	 * @return bool Always true to accept all elements.
 	 */
 	#[\ReturnTypeWillChange]
 	public function accept() {
+		// Accept all elements - filtering happens in get_file_list().
+		return true;
+	}
+
+	/**
+	 * Check whether the current element has children that should be recursed into.
+	 * We return false for ignored directories to prevent descending into them.
+	 *
+	 * @return bool True if we should descend into this directory, false otherwise.
+	 */
+	#[\ReturnTypeWillChange]
+	public function hasChildren() {
 		/** @var SplFileInfo $item */
 		$item = $this->current();
 
-		// If it's not a directory, accept it (filtering will happen later in get_file_list).
+		// If it's not a directory, it has no children.
 		if ( ! $item->isDir() ) {
-			return true;
+			return false;
 		}
 
 		// For directories, check if they should be ignored to prevent descending into them.
 		$relative_filepath = str_replace( $this->source_dir_path, '', $item->getPathname() );
 
 		try {
-			// If the directory is ignored, reject it to prevent descending.
+			// If the directory is ignored, don't descend into it (but it's still yielded by accept()).
 			return ! $this->checker->isPathIgnored( $relative_filepath );
 		} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
-			// If there's an error checking, allow it through (error will be handled in get_file_list).
+			// If there's an error checking, allow descending (error will be handled in get_file_list).
 			return true;
 		}
 	}
