@@ -23,6 +23,13 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	private $source_dir_path;
 
 	/**
+	 * Cache for ignored status to avoid duplicate checks.
+	 *
+	 * @var array<string, bool>
+	 */
+	private $ignored_cache = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RecursiveIterator<string, SplFileInfo> $iterator Iterator to filter.
@@ -45,6 +52,20 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	public function accept() {
 		// Accept all elements - filtering happens in get_file_list().
 		return true;
+	}
+
+	/**
+	 * Check if a path is ignored, with caching to avoid duplicate checks.
+	 *
+	 * @param string $relative_filepath Relative file path to check.
+	 * @return bool True if the path is ignored, false otherwise.
+	 * @throws \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException
+	 */
+	public function isPathIgnoredCached( $relative_filepath ) {
+		if ( ! isset( $this->ignored_cache[ $relative_filepath ] ) ) {
+			$this->ignored_cache[ $relative_filepath ] = $this->checker->isPathIgnored( $relative_filepath );
+		}
+		return $this->ignored_cache[ $relative_filepath ];
 	}
 
 	/**
@@ -81,7 +102,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 		}
 
 		try {
-			$is_ignored = $this->checker->isPathIgnored( $relative_filepath );
+			$is_ignored = $this->isPathIgnoredCached( $relative_filepath );
 
 			if ( ! $is_ignored ) {
 				// Not ignored, so descend.
@@ -100,7 +121,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 				// The actual name doesn't matter; we just need to verify the pattern applies to children.
 				$test_child = $relative_filepath . '/test';
 				try {
-					$child_ignored = $this->checker->isPathIgnored( $test_child );
+					$child_ignored = $this->isPathIgnoredCached( $test_child );
 					if ( $child_ignored ) {
 						// Child is also ignored, safe to skip descent.
 						return false;

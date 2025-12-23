@@ -508,7 +508,7 @@ class Dist_Archive_Command {
 		foreach ( $iterator as $item ) {
 			$relative_filepath = str_replace( $source_dir_path, '', $item->getPathname() );
 			try {
-				if ( $this->checker->isPathIgnored( $relative_filepath ) ) {
+				if ( $filter_iterator->isPathIgnoredCached( $relative_filepath ) ) {
 					$excluded_files[] = $relative_filepath;
 				} else {
 					$included_files[] = $relative_filepath;
