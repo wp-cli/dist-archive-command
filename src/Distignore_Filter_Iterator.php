@@ -30,6 +30,20 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	private $ignored_cache = [];
 
 	/**
+	 * List of excluded file paths (relative).
+	 *
+	 * @var string[]
+	 */
+	private $excluded_files = [];
+
+	/**
+	 * List of items that had errors during checking.
+	 *
+	 * @var array<string, \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException>
+	 */
+	private $error_items = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RecursiveIterator<string, SplFileInfo> $iterator Iterator to filter.
@@ -44,14 +58,51 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 
 	/**
 	 * Check whether the current element of the iterator is acceptable.
-	 * We accept all elements so they can be checked in get_file_list().
+	 * Filters out ignored files so they don't appear in the iteration.
+	 * For directories, we're more conservative - we only filter them out
+	 * if we're certain they and all their contents should be ignored.
 	 *
-	 * @return bool Always true to accept all elements.
+	 * @return bool True if the element should be included, false otherwise.
 	 */
 	#[\ReturnTypeWillChange]
 	public function accept() {
-		// Accept all elements - filtering happens in get_file_list().
-		return true;
+		/** @var SplFileInfo $item */
+		$item = $this->current();
+
+		// Get relative path.
+		$pathname           = $item->getPathname();
+		$source_path_length = strlen( $this->source_dir_path );
+
+		if ( 0 === strpos( $pathname, $this->source_dir_path ) ) {
+			$relative_filepath = substr( $pathname, $source_path_length );
+		} else {
+			$relative_filepath = $pathname;
+		}
+
+		try {
+			$is_ignored = $this->isPathIgnoredCached( $relative_filepath );
+
+			if ( $is_ignored ) {
+				// Track this as excluded.
+				$this->excluded_files[] = $relative_filepath;
+
+				// For files, we can safely filter them out.
+				if ( ! $item->isDir() ) {
+					return false;
+				}
+
+				// For directories, only filter out if we're not going to descend
+				// (hasChildren will handle that check).
+				// We need to yield ignored directories so they can be tracked in exclude lists.
+				return true;
+			}
+
+			return true;
+		} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
+			// Store the error and yield the item so get_file_list can handle it.
+			$this->error_items[ $relative_filepath ] = $exception;
+			return true;
+		}
 	}
 
 	/**
@@ -149,6 +200,30 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	public function getChildren() {
 		/** @var RecursiveDirectoryIterator $inner */
 		$inner = $this->getInnerIterator();
-		return new self( $inner->getChildren(), $this->checker, $this->source_dir_path );
+		// Pass the same arrays by reference so they accumulate across all levels.
+		$child                 = new self( $inner->getChildren(), $this->checker, $this->source_dir_path );
+		$child->excluded_files = &$this->excluded_files;
+		$child->ignored_cache  = &$this->ignored_cache;
+		$child->error_items    = &$this->error_items;
+		return $child;
+	}
+
+	/**
+	 * Get the list of excluded files that were filtered out.
+	 *
+	 * @return string[]
+	 */
+	public function getExcludedFiles() {
+		return $this->excluded_files;
+	}
+
+	/**
+	 * Check if an item had an error during processing.
+	 *
+	 * @param string $relative_filepath Relative file path to check.
+	 * @return \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException|null
+	 */
+	public function getErrorForItem( $relative_filepath ) {
+		return $this->error_items[ $relative_filepath ] ?? null;
 	}
 }
