@@ -495,8 +495,10 @@ class Dist_Archive_Command {
 		$included_files = [];
 		$excluded_files = [];
 
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $source_dir_path, RecursiveDirectoryIterator::SKIP_DOTS ),
+		$directory_iterator = new RecursiveDirectoryIterator( $source_dir_path, RecursiveDirectoryIterator::SKIP_DOTS );
+		$filter_iterator    = new Distignore_Filter_Iterator( $directory_iterator, $this->checker, $source_dir_path );
+		$iterator           = new RecursiveIteratorIterator(
+			$filter_iterator,
 			RecursiveIteratorIterator::SELF_FIRST
 		);
 
