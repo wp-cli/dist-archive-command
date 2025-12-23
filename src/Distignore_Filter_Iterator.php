@@ -69,7 +69,16 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 		}
 
 		// For directories, check if they should be ignored.
-		$relative_filepath = str_replace( $this->source_dir_path, '', $item->getPathname() );
+		$pathname           = $item->getPathname();
+		$source_path_length = strlen( $this->source_dir_path );
+
+		// Extract relative path by removing the source directory prefix.
+		if ( 0 === strpos( $pathname, $this->source_dir_path ) ) {
+			$relative_filepath = substr( $pathname, $source_path_length );
+		} else {
+			// Fallback if path doesn't start with source path (shouldn't happen).
+			$relative_filepath = $pathname;
+		}
 
 		try {
 			$is_ignored = $this->checker->isPathIgnored( $relative_filepath );
@@ -87,6 +96,8 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 				// This is a top-level ignored directory like "/node_modules" or "/.git".
 				// It's likely safe to skip descent as these are typically simple patterns.
 				// However, we still need to be conservative. Let's check if a child would be ignored.
+				// We use 'test' as a probe filename to check if children would be ignored.
+				// The actual name doesn't matter; we just need to verify the pattern applies to children.
 				$test_child = $relative_filepath . '/test';
 				try {
 					$child_ignored = $this->checker->isPathIgnored( $test_child );

@@ -405,13 +405,13 @@ Feature: Generate a distribution archive of a project with .distignore
     When I run `mkdir -p foo/node_modules/package1 foo/node_modules/package2 foo/node_modules/package3`
     Then STDERR should be empty
 
-    When I run `for i in {1..50}; do touch foo/node_modules/package1/file$i.js; done`
+    When I run `sh -c 'i=1; while [ $i -le 50 ]; do touch foo/node_modules/package1/file$i.js; i=$((i+1)); done'`
     Then STDERR should be empty
 
-    When I run `for i in {1..50}; do touch foo/node_modules/package2/file$i.js; done`
+    When I run `sh -c 'i=1; while [ $i -le 50 ]; do touch foo/node_modules/package2/file$i.js; i=$((i+1)); done'`
     Then STDERR should be empty
 
-    When I run `for i in {1..50}; do touch foo/node_modules/package3/file$i.js; done`
+    When I run `sh -c 'i=1; while [ $i -le 50 ]; do touch foo/node_modules/package3/file$i.js; i=$((i+1)); done'`
     Then STDERR should be empty
 
     When I run `wp dist-archive foo`
