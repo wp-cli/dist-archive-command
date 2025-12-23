@@ -49,7 +49,12 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 
 	/**
 	 * Check whether the current element has children that should be recursed into.
-	 * We return false for ignored directories to prevent descending into them.
+	 * We return false for certain ignored directories to prevent descending into them.
+	 *
+	 * This optimization only applies to directories that appear to be "leaf" ignore
+	 * patterns (simple directory names without wildcards), to safely handle cases
+	 * like `node_modules` while still correctly processing complex patterns with
+	 * negations like `frontend/*` with `!/frontend/build/`.
 	 *
 	 * @return bool True if we should descend into this directory, false otherwise.
 	 */
@@ -63,12 +68,40 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 			return false;
 		}
 
-		// For directories, check if they should be ignored to prevent descending into them.
+		// For directories, check if they should be ignored.
 		$relative_filepath = str_replace( $this->source_dir_path, '', $item->getPathname() );
 
 		try {
-			// If the directory is ignored, don't descend into it (but it's still yielded by accept()).
-			return ! $this->checker->isPathIgnored( $relative_filepath );
+			$is_ignored = $this->checker->isPathIgnored( $relative_filepath );
+
+			if ( ! $is_ignored ) {
+				// Not ignored, so descend.
+				return true;
+			}
+
+			// Directory is ignored. Check if it's safe to skip descent.
+			// We only skip for single-level directories (no slashes except leading/trailing)
+			// to avoid issues with wildcard patterns and negations.
+			$path_parts = explode( '/', trim( $relative_filepath, '/' ) );
+			if ( count( $path_parts ) === 1 ) {
+				// This is a top-level ignored directory like "/node_modules" or "/.git".
+				// It's likely safe to skip descent as these are typically simple patterns.
+				// However, we still need to be conservative. Let's check if a child would be ignored.
+				$test_child = $relative_filepath . '/test';
+				try {
+					$child_ignored = $this->checker->isPathIgnored( $test_child );
+					if ( $child_ignored ) {
+						// Child is also ignored, safe to skip descent.
+						return false;
+					}
+				} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
+					// On error, descend to be safe.
+					return true;
+				}
+			}
+
+			// For nested directories or if test shows children might not be ignored, descend.
+			return true;
 		} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
 			// If there's an error checking, allow descending (error will be handled in get_file_list).
 			return true;
