@@ -382,7 +382,7 @@ Feature: Generate a distribution archive of a project with .distignore
 
   Scenario: Efficiently ignores directories with many files
     # Performance test: ensure ignored directories are not scanned
-    # @see https://github.com/wp-cli/dist-archive-command/issues/XXX
+    # @see https://github.com/wp-cli/dist-archive-command/issues/115
     Given an empty directory
     And a foo/.distignore file:
       """
