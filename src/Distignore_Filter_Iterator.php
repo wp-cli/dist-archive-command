@@ -57,6 +57,23 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	}
 
 	/**
+	 * Get the relative file path for the current item.
+	 *
+	 * @param SplFileInfo $item The file item to get the relative path for.
+	 * @return string The relative file path.
+	 */
+	private function getRelativeFilePath( SplFileInfo $item ) {
+		$pathname           = $item->getPathname();
+		$source_path_length = strlen( $this->source_dir_path );
+
+		if ( 0 === strpos( $pathname, $this->source_dir_path ) ) {
+			return substr( $pathname, $source_path_length );
+		}
+
+		return $pathname;
+	}
+
+	/**
 	 * Check whether the current element of the iterator is acceptable.
 	 * Filters out ignored files so they don't appear in the iteration.
 	 * For directories, we're more conservative - we only filter them out
@@ -70,14 +87,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 		$item = $this->current();
 
 		// Get relative path.
-		$pathname           = $item->getPathname();
-		$source_path_length = strlen( $this->source_dir_path );
-
-		if ( 0 === strpos( $pathname, $this->source_dir_path ) ) {
-			$relative_filepath = substr( $pathname, $source_path_length );
-		} else {
-			$relative_filepath = $pathname;
-		}
+		$relative_filepath = $this->getRelativeFilePath( $item );
 
 		try {
 			$is_ignored = $this->isPathIgnoredCached( $relative_filepath );
@@ -141,16 +151,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 		}
 
 		// For directories, check if they should be ignored.
-		$pathname           = $item->getPathname();
-		$source_path_length = strlen( $this->source_dir_path );
-
-		// Extract relative path by removing the source directory prefix.
-		if ( 0 === strpos( $pathname, $this->source_dir_path ) ) {
-			$relative_filepath = substr( $pathname, $source_path_length );
-		} else {
-			// Fallback if path doesn't start with source path (shouldn't happen).
-			$relative_filepath = $pathname;
-		}
+		$relative_filepath = $this->getRelativeFilePath( $item );
 
 		try {
 			$is_ignored = $this->isPathIgnoredCached( $relative_filepath );
