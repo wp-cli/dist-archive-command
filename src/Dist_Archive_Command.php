@@ -505,7 +505,12 @@ class Dist_Archive_Command {
 		 * @var SplFileInfo $item
 		 */
 		foreach ( $iterator as $item ) {
-			$relative_filepath = str_replace( $source_dir_path, '', $item->getPathname() );
+			$pathname = $item->getPathname();
+			if ( 0 === strpos( $pathname, $source_dir_path ) ) {
+				$relative_filepath = substr( $pathname, strlen( $source_dir_path ) );
+			} else {
+				$relative_filepath = $pathname;
+			}
 
 			// Check if this item had an error during filtering.
 			$error = $filter_iterator->getErrorForItem( $relative_filepath );
