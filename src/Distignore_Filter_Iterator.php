@@ -44,6 +44,13 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	private $error_items = [];
 
 	/**
+	 * Set of real paths already visited to prevent infinite symlink loops.
+	 *
+	 * @var array<string, bool>
+	 */
+	private $visited_paths = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RecursiveIterator<string, SplFileInfo> $iterator Iterator to filter.
@@ -150,6 +157,24 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 			return false;
 		}
 
+		// Prevent infinite recursion from symlinks.
+		// Get the real path to detect cycles.
+		$real_path = $item->getRealPath();
+		if ( false !== $real_path ) {
+			// Check if we've already visited this real path.
+			if ( isset( $this->visited_paths[ $real_path ] ) ) {
+				return false;
+			}
+
+			// Check if this is a symlink pointing to a parent directory or creating a cycle.
+			if ( $item->isLink() ) {
+				// If the real path is a parent or ancestor of the source directory, skip it.
+				if ( 0 === strpos( $this->source_dir_path, $real_path ) ) {
+					return false;
+				}
+			}
+		}
+
 		// For directories, check if they should be ignored.
 		$relative_filepath = $this->getRelativeFilePath( $item );
 
@@ -201,11 +226,21 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	public function getChildren() {
 		/** @var RecursiveDirectoryIterator $inner */
 		$inner = $this->getInnerIterator();
+
+		// Mark the current real path as visited to prevent infinite loops.
+		/** @var SplFileInfo $item */
+		$item      = $this->current();
+		$real_path = $item->getRealPath();
+		if ( false !== $real_path ) {
+			$this->visited_paths[ $real_path ] = true;
+		}
+
 		// Pass the same arrays by reference so they accumulate across all levels.
 		$child                 = new self( $inner->getChildren(), $this->checker, $this->source_dir_path );
 		$child->excluded_files = &$this->excluded_files;
 		$child->ignored_cache  = &$this->ignored_cache;
 		$child->error_items    = &$this->error_items;
+		$child->visited_paths  = &$this->visited_paths;
 		return $child;
 	}
 
