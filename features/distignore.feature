@@ -379,3 +379,50 @@ Feature: Generate a distribution archive of a project with .distignore
       """
       Error: Broken symlink at /symlink. Target missing at
       """
+
+  Scenario: Efficiently ignores directories with many files
+    # Performance test: ensure ignored directories are not scanned
+    # @see https://github.com/wp-cli/dist-archive-command/issues/115
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      node_modules
+      .git
+      """
+    And a foo/plugin.php file:
+      """
+      <?php
+      /**
+       * Plugin Name: Test Plugin
+       * Version: 1.0.0
+       */
+      """
+    And a foo/readme.txt file:
+      """
+      === Test Plugin ===
+      """
+
+    When I run `mkdir -p foo/node_modules/package1 foo/node_modules/package2 foo/node_modules/package3`
+    Then STDERR should be empty
+
+    When I run `sh -c 'i=1; while [ $i -le 50 ]; do touch foo/node_modules/package1/file$i.js; i=$((i+1)); done'`
+    Then STDERR should be empty
+
+    When I run `sh -c 'i=1; while [ $i -le 50 ]; do touch foo/node_modules/package2/file$i.js; i=$((i+1)); done'`
+    Then STDERR should be empty
+
+    When I run `sh -c 'i=1; while [ $i -le 50 ]; do touch foo/node_modules/package3/file$i.js; i=$((i+1)); done'`
+    Then STDERR should be empty
+
+    When I run `wp dist-archive foo`
+    Then STDOUT should match /^Success: Created foo\.[^ ]+ \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    And STDERR should be empty
+
+    When I run `rm -rf foo`
+    Then the foo directory should not exist
+
+    When I try `unzip foo.*.zip`
+    Then the foo directory should exist
+    And the foo/plugin.php file should exist
+    And the foo/readme.txt file should exist
+    And the foo/node_modules directory should not exist
