@@ -576,6 +576,12 @@ class Dist_Archive_Command {
 		$size_key = floor( log( $bytes ) / log( 1000 ) );
 		$sizes    = [ 'B', 'KB', 'MB', 'GB', 'TB' ];
 
+		if ( is_infinite( $size_key ) ) {
+			$size_key = 0;
+		}
+
+		$size_key = (int) $size_key;
+
 		$size_format = isset( $sizes[ $size_key ] ) ? $sizes[ $size_key ] : $sizes[0];
 
 		// Display the size as a number.
