@@ -68,7 +68,7 @@ script in each project.
 
 ## Installing
 
-Installing this package requires WP-CLI v2 or greater. Update to the latest stable release with `wp cli update`.
+Installing this package requires WP-CLI v2.13 or greater. Update to the latest stable release with `wp cli update`.
 
 Once you've done so, you can install the latest stable version of this package with:
 
