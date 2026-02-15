@@ -493,10 +493,11 @@ class Dist_Archive_Command {
 	private function get_file_list( $source_dir_path, $excluded = false ) {
 
 		$included_files = [];
-		$excluded_files = [];
 
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $source_dir_path, RecursiveDirectoryIterator::SKIP_DOTS ),
+		$directory_iterator = new RecursiveDirectoryIterator( $source_dir_path, RecursiveDirectoryIterator::SKIP_DOTS );
+		$filter_iterator    = new Distignore_Filter_Iterator( $directory_iterator, $this->checker, $source_dir_path );
+		$iterator           = new RecursiveIteratorIterator(
+			$filter_iterator,
 			RecursiveIteratorIterator::SELF_FIRST
 		);
 
@@ -504,35 +505,49 @@ class Dist_Archive_Command {
 		 * @var SplFileInfo $item
 		 */
 		foreach ( $iterator as $item ) {
-			$relative_filepath = str_replace( $source_dir_path, '', $item->getPathname() );
-			try {
-				if ( $this->checker->isPathIgnored( $relative_filepath ) ) {
-					$excluded_files[] = $relative_filepath;
-				} else {
-					$included_files[] = $relative_filepath;
-				}
-			} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
+			$pathname = $item->getPathname();
+			if ( 0 === strpos( $pathname, $source_dir_path ) ) {
+				$relative_filepath = substr( $pathname, strlen( $source_dir_path ) );
+			} else {
+				$relative_filepath = $pathname;
+			}
+
+			// Check if this item had an error during filtering.
+			$error = $filter_iterator->getErrorForItem( $relative_filepath );
+			if ( $error ) {
 				if ( $item->isLink() && ! file_exists( (string) readlink( $item->getPathname() ) ) ) {
 					WP_CLI::error( "Broken symlink at {$relative_filepath}. Target missing at {$item->getLinkTarget()}." );
 				} else {
-					WP_CLI::error( $exception->getMessage() );
+					WP_CLI::error( $error->getMessage() );
 				}
+			}
+
+			// Check if this item is ignored (directories may still be yielded even if ignored).
+			if ( ! $filter_iterator->isPathIgnoredCached( $relative_filepath ) ) {
+				$included_files[] = $relative_filepath;
 			}
 		}
 
-		// Check all excluded directories and remove them from the excluded list if they contain included files.
-		foreach ( $excluded_files as $excluded_file_index => $excluded_relative_path ) {
-			if ( ! is_dir( $source_dir_path . $excluded_relative_path ) ) {
-				continue;
-			}
-			foreach ( $included_files as $included_relative_path ) {
-				if ( 0 === strpos( $included_relative_path, $excluded_relative_path ) ) {
-					unset( $excluded_files[ $excluded_file_index ] );
+		if ( $excluded ) {
+			// Get excluded files from the filter iterator.
+			$excluded_files = $filter_iterator->getExcludedFiles();
+
+			// Check all excluded directories and remove them from the excluded list if they contain included files.
+			foreach ( $excluded_files as $excluded_file_index => $excluded_relative_path ) {
+				if ( ! is_dir( $source_dir_path . $excluded_relative_path ) ) {
+					continue;
+				}
+				foreach ( $included_files as $included_relative_path ) {
+					if ( 0 === strpos( $included_relative_path, $excluded_relative_path ) ) {
+						unset( $excluded_files[ $excluded_file_index ] );
+					}
 				}
 			}
+
+			return $excluded_files;
 		}
 
-		return $excluded ? $excluded_files : $included_files;
+		return $included_files;
 	}
 
 	/**
@@ -560,6 +575,12 @@ class Dist_Archive_Command {
 
 		$size_key = floor( log( $bytes ) / log( 1000 ) );
 		$sizes    = [ 'B', 'KB', 'MB', 'GB', 'TB' ];
+
+		if ( is_infinite( $size_key ) ) {
+			$size_key = 0;
+		}
+
+		$size_key = (int) $size_key;
 
 		$size_format = isset( $sizes[ $size_key ] ) ? $sizes[ $size_key ] : $sizes[0];
 
