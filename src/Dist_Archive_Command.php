@@ -122,39 +122,30 @@ class Dist_Archive_Command {
 			WP_CLI::log( "Replacing $archive_absolute_filepath" . PHP_EOL );
 		}
 
-		chdir( dirname( $source_path ) );
+		if ( 'zip' === $assoc_args['format'] ) {
+			// Use PHP's ZipArchive to create zip archives natively, without requiring
+			// the external zip command, which may not be available on all platforms (e.g. Windows).
+			if ( $source_path !== $source_dir_path || empty( $file_ignore_rules ) ) {
+				// Files are already filtered (copied to temp dir) or no filtering needed.
+				$included_files = null;
+			} else {
+				// Apply distignore filtering in place.
+				$included_files = $this->get_file_list( $source_path );
+			}
 
-		$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_output_dir_name}";
-
-		// If the files are being zipped in place, we need the exclusion rules.
-		// whereas if they were copied for any reasons above, the rules have already been applied.
-		if ( $source_path !== $source_dir_path || empty( $file_ignore_rules ) ) {
-			if ( 'zip' === $assoc_args['format'] ) {
-				$cmd = "zip -r '{$archive_absolute_filepath}' {$archive_output_dir_name}";
-			} elseif ( 'targz' === $assoc_args['format'] ) {
-				$cmd = "tar -zcvf {$archive_absolute_filepath} {$archive_output_dir_name}";
+			if ( true !== $this->create_zip_archive( $archive_absolute_filepath, $source_path, $archive_output_dir_name, $included_files ) ) {
+				WP_CLI::error( 'Failed to create ZIP archive.' );
 			}
 		} else {
-			$tmp_dir = sys_get_temp_dir() . '/' . uniqid( $archive_file_name );
-			mkdir( $tmp_dir, 0777, true );
-			if ( 'zip' === $assoc_args['format'] ) {
-				$include_list_filepath = $tmp_dir . '/include-file-list.txt';
-				file_put_contents(
-					$include_list_filepath,
-					trim(
-						implode(
-							"\n",
-							array_map(
-								function ( $relative_path ) use ( $source_path ) {
-									return basename( $source_path ) . $relative_path;
-								},
-								$this->get_file_list( $source_path )
-							)
-						)
-					)
-				);
-				$cmd = "zip --filesync -r '{$archive_absolute_filepath}' {$archive_output_dir_name} -i@{$include_list_filepath}";
-			} elseif ( 'targz' === $assoc_args['format'] ) {
+			chdir( dirname( $source_path ) );
+
+			// If the files are being zipped in place, we need the exclusion rules.
+			// whereas if they were copied for any reasons above, the rules have already been applied.
+			if ( $source_path !== $source_dir_path || empty( $file_ignore_rules ) ) {
+				$cmd = "tar -zcvf {$archive_absolute_filepath} {$archive_output_dir_name}";
+			} else {
+				$tmp_dir = sys_get_temp_dir() . '/' . uniqid( $archive_file_name );
+				mkdir( $tmp_dir, 0777, true );
 				$exclude_list_filepath = "{$tmp_dir}/exclude-file-list.txt";
 				$excludes              = array_filter(
 					array_map(
@@ -172,25 +163,25 @@ class Dist_Archive_Command {
 				$anchored_flag = ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '';
 				$cmd           = "tar {$anchored_flag} --exclude-from={$exclude_list_filepath} -zcvf {$archive_absolute_filepath} {$archive_output_dir_name}";
 			}
+
+			$escape_whitelist = array( '^', '*' );
+			WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
+			$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
+
+			/**
+			 * @var WP_CLI\ProcessRun $ret
+			 */
+			$ret = WP_CLI::launch( $escaped_shell_command, false, true );
+			if ( 0 !== $ret->return_code ) {
+				$error = $ret->stderr ?: $ret->stdout;
+				WP_CLI::error( $error );
+			}
 		}
 
-		$escape_whitelist = 'targz' === $assoc_args['format'] ? array( '^', '*' ) : array();
-		WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
-		$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
+		$filename  = pathinfo( $archive_absolute_filepath, PATHINFO_BASENAME );
+		$file_size = $this->get_size_format( (int) filesize( $archive_absolute_filepath ), 2 );
 
-		/**
-		 * @var WP_CLI\ProcessRun $ret
-		 */
-		$ret = WP_CLI::launch( $escaped_shell_command, false, true );
-		if ( 0 === $ret->return_code ) {
-			$filename  = pathinfo( $archive_absolute_filepath, PATHINFO_BASENAME );
-			$file_size = $this->get_size_format( (int) filesize( $archive_absolute_filepath ), 2 );
-
-			WP_CLI::success( "Created {$filename} (Size: {$file_size})" );
-		} else {
-			$error = $ret->stderr ?: $ret->stdout;
-			WP_CLI::error( $error );
-		}
+		WP_CLI::success( "Created {$filename} (Size: {$file_size})" );
 	}
 
 	/**
@@ -448,6 +439,67 @@ class Dist_Archive_Command {
 		return $escaped_command;
 	}
 
+
+	/**
+	 * Create a ZIP archive using PHP's ZipArchive class.
+	 *
+	 * This avoids the need for an external zip command, improving portability
+	 * across platforms including Windows.
+	 *
+	 * @param string        $archive_filepath        Path to the ZIP archive to create.
+	 * @param string        $source_path             Path to the directory to archive.
+	 * @param string        $archive_output_dir_name The directory name inside the archive.
+	 * @param string[]|null $included_files          List of relative file paths to include,
+	 *                                               or null to include all files in $source_path.
+	 * @return bool True on success, false on failure.
+	 */
+	private function create_zip_archive( $archive_filepath, $source_path, $archive_output_dir_name, $included_files = null ) {
+
+		if ( file_exists( $archive_filepath ) ) {
+			unlink( $archive_filepath );
+		}
+
+		$zip    = new ZipArchive();
+		$result = $zip->open( $archive_filepath, ZipArchive::CREATE );
+		if ( true !== $result ) {
+			return false;
+		}
+
+		if ( null === $included_files ) {
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator( $source_path, RecursiveDirectoryIterator::SKIP_DOTS ),
+				RecursiveIteratorIterator::SELF_FIRST
+			);
+			/**
+			 * @var SplFileInfo $file
+			 */
+			foreach ( $iterator as $file ) {
+				$pathname      = $file->getPathname();
+				$relative_path = substr( $pathname, strlen( $source_path ) );
+				$relative_path = str_replace( '\\', '/', $relative_path );
+				$archive_path  = $archive_output_dir_name . $relative_path;
+
+				if ( $file->isDir() ) {
+					$zip->addEmptyDir( $archive_path );
+				} else {
+					$zip->addFile( $pathname, $archive_path );
+				}
+			}
+		} else {
+			foreach ( $included_files as $relative_filepath ) {
+				$full_path    = $source_path . $relative_filepath;
+				$archive_path = $archive_output_dir_name . str_replace( '\\', '/', $relative_filepath );
+
+				if ( is_dir( $full_path ) ) {
+					$zip->addEmptyDir( $archive_path );
+				} else {
+					$zip->addFile( $full_path, $archive_path );
+				}
+			}
+		}
+
+		return $zip->close();
+	}
 
 	/**
 	 * Given the path to a directory, check are any of the directories inside it symlinks.
