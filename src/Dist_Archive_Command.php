@@ -476,29 +476,33 @@ class Dist_Archive_Command {
 			foreach ( $iterator as $file ) {
 				$pathname      = $file->getPathname();
 				$relative_path = substr( $pathname, strlen( $source_path ) );
-				$relative_path = str_replace( '\\', '/', $relative_path );
-				$archive_path  = $archive_output_dir_name . $relative_path;
-
-				if ( $file->isDir() ) {
-					$zip->addEmptyDir( $archive_path );
-				} else {
-					$zip->addFile( $pathname, $archive_path );
-				}
+				$this->add_zip_entry( $zip, $pathname, $archive_output_dir_name . str_replace( '\\', '/', $relative_path ), $file->isDir() );
 			}
 		} else {
 			foreach ( $included_files as $relative_filepath ) {
-				$full_path    = $source_path . $relative_filepath;
-				$archive_path = $archive_output_dir_name . str_replace( '\\', '/', $relative_filepath );
-
-				if ( is_dir( $full_path ) ) {
-					$zip->addEmptyDir( $archive_path );
-				} else {
-					$zip->addFile( $full_path, $archive_path );
-				}
+				$full_path = $source_path . $relative_filepath;
+				$this->add_zip_entry( $zip, $full_path, $archive_output_dir_name . str_replace( '\\', '/', $relative_filepath ), is_dir( $full_path ) );
 			}
 		}
 
 		return $zip->close();
+	}
+
+	/**
+	 * Add a single file or directory entry to an open ZipArchive.
+	 *
+	 * @param ZipArchive $zip          The open ZipArchive instance.
+	 * @param string     $full_path    Absolute filesystem path to the file or directory.
+	 * @param string     $archive_path Path to use inside the archive.
+	 * @param bool       $is_dir       Whether the entry is a directory.
+	 * @return void
+	 */
+	private function add_zip_entry( ZipArchive $zip, $full_path, $archive_path, $is_dir ) {
+		if ( $is_dir ) {
+			$zip->addEmptyDir( $archive_path );
+		} else {
+			$zip->addFile( $full_path, $archive_path );
+		}
 	}
 
 	/**
