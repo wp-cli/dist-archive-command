@@ -13,6 +13,7 @@
     ],
     "require": {
         "php": ">=7.2",
+        "ext-zip": "*",
         "wp-cli/wp-cli": "^2.13",
         "inmarelibero/gitignore-checker": "^1.0.4"
     },
