@@ -266,6 +266,30 @@ Feature: Generate a distribution archive of a project
     And the wp-content/plugins/hello-world/.circleci/config.yml file should not exist
     And the wp-content/plugins/hello-world/bin directory should not exist
 
+  Scenario: Uses plugin Version header, not PHPdoc @version tag, for archive name
+    Given an empty directory
+    And a my-plugin/my-plugin.php file:
+      """
+      <?php
+      /**
+       * Plugin Name: My Plugin
+       * Version:     7.6.0
+       */
+      """
+    And a my-plugin/class-my-plugin.php file:
+      """
+      <?php
+      /**
+       * Main class file.
+       *
+       * @version 7.2.0
+       */
+      """
+
+    When I try `wp dist-archive my-plugin`
+    Then the my-plugin.7.6.0.zip file should exist
+    And the my-plugin.7.2.0.zip file should not exist
+
   # This test does not work with SQLite because it wipes wp-content
   # but SQLite requires an integration plugin & drop-in to work.
   @require-mysql
