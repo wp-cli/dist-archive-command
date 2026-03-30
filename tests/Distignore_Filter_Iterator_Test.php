@@ -17,6 +17,7 @@ class Distignore_Filter_Iterator_Test extends TestCase {
 	 */
 	public function setUp(): void {
 		parent::setUp();
+
 		$this->temp_dir = sys_get_temp_dir() . '/distignore-test-' . uniqid();
 		mkdir( $this->temp_dir );
 	}
