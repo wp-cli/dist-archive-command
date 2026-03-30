@@ -20,7 +20,7 @@ class Distignore_Filter_Iterator_Test extends TestCase {
 
 		// Skip on Windows due to upstream bug in gitignore-checker where it fails to recognize absolute paths with mixed slashes.
 		// @see https://github.com/inmarelibero/gitignore-checker/issues/18
-		if ( strtoupper( substr( PHP_OS, 0, 3 ) ) === 'WIN' ) {
+		if ( DIRECTORY_SEPARATOR === '\\' ) {
 			$this->markTestSkipped( 'Skipping on Windows due to upstream bug in gitignore-checker.' );
 		}
 
