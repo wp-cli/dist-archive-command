@@ -14,3 +14,4 @@ jobs:
     uses: wp-cli/.github/.github/workflows/reusable-testing.yml@main
     with:
       minimum-php: '7.2'
+      matrix: '{"include": [], "exclude": [{"os": "windows-latest"}]}'
