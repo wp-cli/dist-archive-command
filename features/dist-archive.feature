@@ -1,5 +1,4 @@
-# Skip on Windows due to upstream bug in gitignore-checker: https://github.com/inmarelibero/gitignore-checker/issues/18
-@skip-windows
+@require-php-7.1
 Feature: Generate a distribution archive of a project
 
   Scenario: Generates a ZIP archive by default

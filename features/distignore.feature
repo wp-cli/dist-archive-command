@@ -1,6 +1,5 @@
 # The "Examples" dataprovider is needed due to differences in zip and tar.
-# Skip on Windows due to upstream bug in gitignore-checker: https://github.com/inmarelibero/gitignore-checker/issues/18
-@skip-windows
+@require-php-7.1
 Feature: Generate a distribution archive of a project with .distignore
 
   Scenario: Ignores backup files with a period and tilde
