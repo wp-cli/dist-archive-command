@@ -562,3 +562,58 @@ Feature: Generate a distribution archive of a project
       """
       foo/foo.txt
       """
+
+  Scenario: Prevents GNU tar argument injection via Version header
+    Given an empty directory
+    And a foo/.distignore file:
+      """
+      """
+    And a foo/style.css file:
+      """
+      /*
+      Theme Name: Test Theme
+      Version: 1.0 --checkpoint=1 --checkpoint-action=exec=foo/pwn.sh --owner=x
+      */
+      """
+    And a foo/pwn.sh file:
+      """
+      echo "RCE" > rce_proof.txt
+      """
+
+    When I run `wp dist-archive foo --format=targz`
+    Then STDOUT should match /^Success: Created foo.tar.gz \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    And the foo.tar.gz file should exist
+    And the rce_proof.txt file should not exist
+
+  Scenario: Rejects invalid version headers in plugin PHP file and composer.json
+    Given an empty directory
+    And a bar/.distignore file:
+      """
+      """
+    And a bar/bar.php file:
+      """
+      <?php
+      /*
+      Plugin Name: Test Plugin
+      Version: 2.0 --checkpoint=1 --owner=x
+      */
+      """
+
+    When I run `wp dist-archive bar --format=targz`
+    Then STDOUT should match /^Success: Created bar.tar.gz \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    And the bar.tar.gz file should exist
+
+    Given a baz/.distignore file:
+      """
+      """
+    And a baz/composer.json file:
+      """
+      {
+        "name": "vendor/baz",
+        "version": "3.0 --checkpoint=1 --owner=x"
+      }
+      """
+
+    When I run `wp dist-archive baz --format=targz`
+    Then STDOUT should match /^Success: Created baz.tar.gz \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    And the baz.tar.gz file should exist
