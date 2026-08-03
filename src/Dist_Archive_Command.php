@@ -142,7 +142,7 @@ class Dist_Archive_Command {
 			// If the files are being zipped in place, we need the exclusion rules.
 			// whereas if they were copied for any reasons above, the rules have already been applied.
 			if ( $source_path !== $source_dir_path || empty( $file_ignore_rules ) ) {
-				$cmd = "tar -zcvf {$archive_absolute_filepath} {$archive_output_dir_name}";
+				$cmd = Utils\esc_cmd( 'tar -zcvf %s %s', $archive_absolute_filepath, $archive_output_dir_name );
 			} else {
 				$tmp_dir = sys_get_temp_dir() . '/' . uniqid( $archive_file_name );
 				mkdir( $tmp_dir, 0777, true );
@@ -161,7 +161,7 @@ class Dist_Archive_Command {
 					trim( implode( "\n", $excludes ) )
 				);
 				$anchored_flag = ( php_uname( 's' ) === 'Linux' ) ? '--anchored ' : '';
-				$cmd           = "tar {$anchored_flag} --exclude-from={$exclude_list_filepath} -zcvf {$archive_absolute_filepath} {$archive_output_dir_name}";
+				$cmd           = Utils\esc_cmd( "tar {$anchored_flag}--exclude-from=%s -zcvf %s %s", $exclude_list_filepath, $archive_absolute_filepath, $archive_output_dir_name );
 			}
 
 			$escape_whitelist = array( '^', '*' );
@@ -286,7 +286,10 @@ class Dist_Archive_Command {
 			$contents = str_replace( "\r", "\n", $contents );
 			$pattern  = '/^' . preg_quote( 'Version', ',' ) . ':(.*)$/mi';
 			if ( preg_match( $pattern, $contents, $match ) && $match[1] ) {
-				$version = trim( (string) preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
+				$matched_version = trim( (string) preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
+				if ( preg_match( '/^[A-Za-z0-9][A-Za-z0-9._+-]*$/', $matched_version ) ) {
+					$version = $matched_version;
+				}
 			}
 		}
 
@@ -299,8 +302,11 @@ class Dist_Archive_Command {
 				$contents = str_replace( "\r", "\n", $contents );
 				$pattern  = '/^[ \t\/*#@]*Version:(.*)$/mi';
 				if ( preg_match( $pattern, $contents, $match ) && $match[1] ) {
-					$version = trim( (string) preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
-					break;
+					$matched_version = trim( (string) preg_replace( '/\s*(?:\*\/|\?>).*/', '', $match[1] ) );
+					if ( preg_match( '/^[A-Za-z0-9][A-Za-z0-9._+-]*$/', $matched_version ) ) {
+						$version = $matched_version;
+						break;
+					}
 				}
 			}
 		}
@@ -311,7 +317,10 @@ class Dist_Archive_Command {
 			 */
 			$composer_obj = json_decode( (string) file_get_contents( $source_dir_path . '/composer.json' ) );
 			if ( $composer_obj && ! empty( $composer_obj->version ) ) {
-				$version = trim( $composer_obj->version );
+				$matched_version = trim( (string) $composer_obj->version );
+				if ( preg_match( '/^[A-Za-z0-9][A-Za-z0-9._+-]*$/', $matched_version ) ) {
+					$version = $matched_version;
+				}
 			}
 		}
 
@@ -319,11 +328,15 @@ class Dist_Archive_Command {
 			/**
 			 * @var WP_CLI\ProcessRun $response
 			 */
-			$response   = WP_CLI::launch( "cd {$source_dir_path}; git log --pretty=format:'%h' -n 1", false, true );
+			$response   = WP_CLI::launch( Utils\esc_cmd( 'git -C %s log --pretty=format:%%h -n 1', $source_dir_path ), false, true );
 			$maybe_hash = trim( $response->stdout );
-			if ( $maybe_hash && 7 === strlen( $maybe_hash ) ) {
+			if ( $maybe_hash && 7 === strlen( $maybe_hash ) && preg_match( '/^[0-9a-f]{7}$/i', $maybe_hash ) ) {
 				$version .= '-' . $maybe_hash;
 			}
+		}
+
+		if ( ! empty( $version ) && ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._+-]*$/', $version ) ) {
+			return '';
 		}
 
 		return $version;
