@@ -617,3 +617,23 @@ Feature: Generate a distribution archive of a project
     When I run `wp dist-archive baz --format=targz`
     Then STDOUT should match /^Success: Created baz.tar.gz \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
     And the baz.tar.gz file should exist
+
+  Scenario: Generates a tarball archive when directory path contains special characters
+    Given an empty directory
+    And a plug(1)/.distignore file:
+      """
+      """
+    And a plug(1)/plug.php file:
+      """
+      <?php
+      /*
+      Plugin Name: Plug 1
+      Version: 1.0.0
+      */
+      """
+
+    When I run `wp dist-archive 'plug(1)' --format=targz`
+    Then STDOUT should match /^Success: Created plug\(1\).1.0.0.tar.gz \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    And the plug(1).1.0.0.tar.gz file should exist
+
+

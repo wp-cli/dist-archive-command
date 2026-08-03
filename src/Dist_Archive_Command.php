@@ -164,14 +164,12 @@ class Dist_Archive_Command {
 				$cmd           = Utils\esc_cmd( "tar {$anchored_flag}--exclude-from=%s -zcvf %s %s", $exclude_list_filepath, $archive_absolute_filepath, $archive_output_dir_name );
 			}
 
-			$escape_whitelist = array( '^', '*' );
 			WP_CLI::debug( "Running: {$cmd}", 'dist-archive' );
-			$escaped_shell_command = $this->escapeshellcmd( $cmd, $escape_whitelist );
 
 			/**
 			 * @var WP_CLI\ProcessRun $ret
 			 */
-			$ret = WP_CLI::launch( $escaped_shell_command, false, true );
+			$ret = WP_CLI::launch( $cmd, false, true );
 			if ( 0 !== $ret->return_code ) {
 				$error = $ret->stderr ?: $ret->stdout;
 				WP_CLI::error( $error );
@@ -352,29 +350,6 @@ class Dist_Archive_Command {
 		if ( ! is_dir( $destination_dir_path ) ) {
 			mkdir( $destination_dir_path, $mode = 0777, $recursive = true );
 		}
-	}
-
-	/**
-	 * Run PHP's escapeshellcmd() then undo escaping known intentional characters.
-	 *
-	 * Escaped by default: &#;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped when not paired.
-	 *
-	 * @see escapeshellcmd()
-	 *
-	 * @param string $cmd The shell command to escape.
-	 * @param string[] $whitelist Array of exceptions to allow in the escaped command.
-	 *
-	 * @return string
-	 */
-	protected function escapeshellcmd( $cmd, $whitelist ) {
-
-		$escaped_command = escapeshellcmd( $cmd );
-
-		foreach ( $whitelist as $undo_escape ) {
-			$escaped_command = str_replace( '\\' . $undo_escape, $undo_escape, $escaped_command );
-		}
-
-		return $escaped_command;
 	}
 
 
