@@ -10,6 +10,8 @@ use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
  * iteration through thousands of files in directories like node_modules.
  * However, it still yields the ignored directories themselves so they can
  * be properly tracked in exclude lists.
+ *
+ * @phpstan-consistent-constructor
  */
 class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	/**
@@ -220,7 +222,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	/**
 	 * Return the inner iterator's children wrapped in this filter.
 	 *
-	 * @return RecursiveFilterIterator
+	 * @return static
 	 */
 	#[\ReturnTypeWillChange]
 	public function getChildren() {
@@ -236,7 +238,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 		}
 
 		// Pass the same arrays by reference so they accumulate across all levels.
-		$child                 = new self( $inner->getChildren(), $this->checker, $this->source_dir_path );
+		$child                 = new static( $inner->getChildren(), $this->checker, $this->source_dir_path );
 		$child->excluded_files = &$this->excluded_files;
 		$child->ignored_cache  = &$this->ignored_cache;
 		$child->error_items    = &$this->error_items;
