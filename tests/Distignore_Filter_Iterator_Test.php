@@ -3,6 +3,8 @@
 use WP_CLI\Tests\TestCase;
 use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
+require_once __DIR__ . '/Recording_Distignore_Filter_Iterator.php';
+
 class Distignore_Filter_Iterator_Test extends TestCase {
 
 	/**
@@ -237,6 +239,45 @@ class Distignore_Filter_Iterator_Test extends TestCase {
 		$this->assertContains( '/src/components', $files );
 		$this->assertContains( '/src/index.php', $files );
 		$this->assertContains( '/src/components/widget.php', $files );
+	}
+
+	/**
+	 * Test that iteration never descends into ignored directories.
+	 *
+	 * The yielded-items assertions in test_has_children_prevents_descent pass even when
+	 * descent happens (accept() filters each child individually), so this test records
+	 * every path checked against the ignore rules to prove the contents of ignored
+	 * directories are never visited at all.
+	 *
+	 * @see https://github.com/wp-cli/dist-archive-command/issues/134
+	 */
+	public function test_does_not_descend_into_ignored_directories(): void {
+		mkdir( $this->temp_dir . '/node_modules' );
+		mkdir( $this->temp_dir . '/node_modules/package1' );
+		file_put_contents( $this->temp_dir . '/node_modules/package1/file1.js', 'test' );
+		file_put_contents( $this->temp_dir . '/node_modules/file2.js', 'test' );
+		mkdir( $this->temp_dir . '/sub' );
+		mkdir( $this->temp_dir . '/sub/node_modules' );
+		file_put_contents( $this->temp_dir . '/sub/node_modules/deep.js', 'test' );
+		file_put_contents( $this->temp_dir . '/index.php', '<?php' );
+		file_put_contents( $this->temp_dir . '/.distignore', "node_modules\n" );
+
+		Recording_Distignore_Filter_Iterator::$checked_paths = [];
+
+		$checker        = new GitIgnoreChecker( $this->temp_dir, '.distignore' );
+		$directory_iter = new RecursiveDirectoryIterator( $this->temp_dir, RecursiveDirectoryIterator::SKIP_DOTS );
+		$filter_iter    = new Recording_Distignore_Filter_Iterator( $directory_iter, $checker, $this->temp_dir );
+		$recursive_iter = new RecursiveIteratorIterator( $filter_iter, RecursiveIteratorIterator::SELF_FIRST );
+
+		iterator_to_array( $recursive_iter );
+
+		$checked_paths = Recording_Distignore_Filter_Iterator::$checked_paths;
+
+		$this->assertContains( '/node_modules', $checked_paths );
+		$this->assertContains( '/sub/node_modules', $checked_paths );
+		foreach ( $checked_paths as $checked_path ) {
+			$this->assertStringNotContainsString( 'node_modules/', $checked_path, 'Paths inside an ignored directory should never be checked' );
+		}
 	}
 
 	/**
