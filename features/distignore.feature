@@ -30,7 +30,7 @@ Feature: Generate a distribution archive of a project with .distignore
       """
 
     When I run `wp dist-archive foo`
-    Then STDOUT should match /^Success: Created foo.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created foo.zip \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
 
     When I run `rm -rf foo`
     Then the foo directory should not exist
@@ -64,7 +64,7 @@ Feature: Generate a distribution archive of a project with .distignore
       """
 
     When I run `wp dist-archive foo --format=<format>`
-    Then STDOUT should match /^Success: Created foo.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created foo.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And the foo.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -104,7 +104,7 @@ Feature: Generate a distribution archive of a project with .distignore
     And the foo/.git/subfolder/version.control file should exist
 
     When I run `wp dist-archive foo --format=<format>`
-    Then STDOUT should match /^Success: Created foo.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created foo.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And the foo.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -153,7 +153,7 @@ Feature: Generate a distribution archive of a project with .distignore
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -201,7 +201,7 @@ Feature: Generate a distribution archive of a project with .distignore
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -245,7 +245,7 @@ Feature: Generate a distribution archive of a project with .distignore
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `rm -rf foo`
@@ -290,7 +290,7 @@ Feature: Generate a distribution archive of a project with .distignore
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `mv foo sourcefoo`
@@ -337,7 +337,7 @@ Feature: Generate a distribution archive of a project with .distignore
       """
 
     When I run `wp dist-archive foo --format=<format> --plugin-dirname=<plugin-dirname>`
-    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created <plugin-dirname>.<extension> \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And the <plugin-dirname>.<extension> file should exist
 
     When I run `mv foo sourcefoo`
@@ -415,7 +415,7 @@ Feature: Generate a distribution archive of a project with .distignore
     Then STDERR should be empty
 
     When I run `wp dist-archive foo`
-    Then STDOUT should match /^Success: Created foo\.[^ ]+ \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\)$/
+    Then STDOUT should match /^Success: Created foo\.[^ ]+ \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And STDERR should be empty
 
     When I run `rm -rf foo`
