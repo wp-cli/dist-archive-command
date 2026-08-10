@@ -72,6 +72,8 @@ class Dist_Archive_Command {
 	 */
 	public function __invoke( $args, $assoc_args ) {
 
+		$started_time = time();
+
 		list( $source_dir_path, $destination_dir_path, $archive_file_name, $archive_output_dir_name ) = $this->get_file_paths_and_names( $args, $assoc_args );
 
 		$this->checker        = new GitIgnoreChecker( $source_dir_path, '.distignore' );
@@ -179,7 +181,11 @@ class Dist_Archive_Command {
 		$filename  = pathinfo( $archive_absolute_filepath, PATHINFO_BASENAME );
 		$file_size = $this->get_size_format( (int) filesize( $archive_absolute_filepath ), 2 );
 
-		WP_CLI::success( "Created {$filename} (Size: {$file_size})" );
+		$time_taken         = time() - $started_time;
+		$time_taken_minutes = (int) ( $time_taken / 60 );
+		$time_taken_seconds = $time_taken % 60;
+
+		WP_CLI::success( "Created {$filename} (Size: {$file_size}) in {$time_taken_minutes}m {$time_taken_seconds}s." );
 	}
 
 	/**
