@@ -190,7 +190,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 
 		try {
 			if ( $this->isPathIgnoredCached( $relative_filepath ) ) {
-				if ( $this->might_contain_negated_path( $relative_filepath ) ) {
+				if ( $this->mightContainNegatedPath( $relative_filepath ) ) {
 					return true;
 				}
 				WP_CLI::debug( "Skipping descent into ignored directory: {$relative_filepath}", 'dist-archive' );
@@ -214,7 +214,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	 *
 	 * @param string $relative_dirpath Relative path of the ignored directory.
 	 */
-	private function might_contain_negated_path( string $relative_dirpath ): bool {
+	private function mightContainNegatedPath( string $relative_dirpath ): bool {
 		if ( null === $this->negation_rules ) {
 			$this->negation_rules = [];
 			$distignore_filepath  = $this->source_dir_path . '/.distignore';
