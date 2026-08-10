@@ -53,6 +53,14 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 	private $visited_paths = [];
 
 	/**
+	 * Negation rules (lines with a leading `!`) from the `.distignore` file, without the `!`.
+	 * Null until first read.
+	 *
+	 * @var string[]|null
+	 */
+	private $negation_rules;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RecursiveIterator<string, SplFileInfo> $iterator Iterator to filter.
@@ -140,12 +148,12 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 
 	/**
 	 * Check whether the current element has children that should be recursed into.
-	 * We return false for certain ignored directories to prevent descending into them.
+	 * We return false for ignored directories to prevent descending into them.
 	 *
-	 * This optimization only applies to directories that appear to be "leaf" ignore
-	 * patterns (simple directory names without wildcards), to safely handle cases
-	 * like `node_modules` while still correctly processing complex patterns with
-	 * negations like `frontend/*` with `!/frontend/build/`.
+	 * An ignored directory's contents cannot appear in the archive, so there is no need
+	 * to traverse them — except when a negation rule (leading `!`) might re-include a
+	 * path inside it, e.g. `frontend/*` with `!/frontend/build/`, where the checker
+	 * reports `/frontend` itself as ignored but `/frontend/build` is not.
 	 *
 	 * @return bool True if we should descend into this directory, false otherwise.
 	 */
@@ -181,42 +189,56 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 		$relative_filepath = $this->getRelativeFilePath( $item );
 
 		try {
-			$is_ignored = $this->isPathIgnoredCached( $relative_filepath );
-
-			if ( ! $is_ignored ) {
-				// Not ignored, so descend.
-				return true;
-			}
-
-			// Directory is ignored. Check if it's safe to skip descent.
-			// We only skip for single-level directories (no slashes except leading/trailing)
-			// to avoid issues with wildcard patterns and negations.
-			$path_parts = explode( '/', trim( $relative_filepath, '/' ) );
-			if ( count( $path_parts ) === 1 ) {
-				// This is a top-level ignored directory like "/node_modules" or "/.git".
-				// It's likely safe to skip descent as these are typically simple patterns.
-				// However, we still need to be conservative. Let's check if a child would be ignored.
-				// We use 'test' as a probe filename to check if children would be ignored.
-				// The actual name doesn't matter; we just need to verify the pattern applies to children.
-				$test_child = $relative_filepath . '/test';
-				try {
-					$child_ignored = $this->isPathIgnoredCached( $test_child );
-					if ( $child_ignored ) {
-						// Child is also ignored, safe to skip descent.
-						return false;
-					}
-				} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
-					// On error, descend to be safe.
+			if ( $this->isPathIgnoredCached( $relative_filepath ) ) {
+				if ( $this->mightContainNegatedPath( $relative_filepath ) ) {
 					return true;
 				}
+				WP_CLI::debug( "Skipping descent into ignored directory: {$relative_filepath}", 'dist-archive' );
+				return false;
 			}
 
-			// For nested directories or if test shows children might not be ignored, descend.
 			return true;
 		} catch ( \Inmarelibero\GitIgnoreChecker\Exception\InvalidArgumentException $exception ) {
 			// If there's an error checking, allow descending (error will be handled in get_file_list).
+			WP_CLI::debug( "Error checking is path ignored for {$relative_filepath}: " . $exception->getMessage(), 'dist-archive' );
 			return true;
 		}
+	}
+
+	/**
+	 * Check whether a `.distignore` negation rule (leading `!`) might re-include a path
+	 * inside the given ignored directory, meaning it must still be descended into.
+	 *
+	 * Anchored negation patterns without wildcards are compared by path prefix; unanchored
+	 * or wildcard patterns could match anywhere, so they conservatively require descent.
+	 *
+	 * @param string $relative_dirpath Relative path of the ignored directory.
+	 */
+	private function mightContainNegatedPath( string $relative_dirpath ): bool {
+		if ( null === $this->negation_rules ) {
+			$this->negation_rules = [];
+			$distignore_filepath  = $this->source_dir_path . '/.distignore';
+			if ( file_exists( $distignore_filepath ) ) {
+				foreach ( explode( "\n", (string) file_get_contents( $distignore_filepath ) ) as $line ) {
+					$line = trim( $line );
+					if ( '' !== $line && '!' === $line[0] ) {
+						$this->negation_rules[] = substr( $line, 1 );
+					}
+				}
+			}
+		}
+
+		foreach ( $this->negation_rules as $rule ) {
+			$rule = rtrim( $rule, '/' );
+			if ( '' === $rule || '/' !== $rule[0] || false !== strpbrk( $rule, '*?[' ) ) {
+				return true;
+			}
+			if ( 0 === strpos( $rule, $relative_dirpath . '/' ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -243,6 +265,7 @@ class Distignore_Filter_Iterator extends RecursiveFilterIterator {
 		$child->ignored_cache  = &$this->ignored_cache;
 		$child->error_items    = &$this->error_items;
 		$child->visited_paths  = &$this->visited_paths;
+		$child->negation_rules = &$this->negation_rules;
 		return $child;
 	}
 

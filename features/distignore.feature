@@ -414,6 +414,16 @@ Feature: Generate a distribution archive of a project with .distignore
     When I run `sh -c 'i=1; while [ $i -le 50 ]; do touch foo/node_modules/package3/file$i.js; i=$((i+1)); done'`
     Then STDERR should be empty
 
+    When I try `wp dist-archive foo foo-debug.zip --debug=dist-archive`
+    Then STDERR should contain:
+      """
+      Skipping descent into ignored directory: /node_modules
+      """
+    And STDERR should not contain:
+      """
+      /node_modules/package1
+      """
+
     When I run `wp dist-archive foo`
     Then STDOUT should match /^Success: Created foo\.[^ ]+ \(Size: \d+(?:\.\d*)? [a-zA-Z]{1,3}\) in \d+m \d+s\.$/
     And STDERR should be empty
